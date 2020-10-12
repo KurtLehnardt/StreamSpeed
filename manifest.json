@@ -18,9 +18,7 @@
                "128": "images/play128.png" 
     },
     "permissions": [
-     "activeTab",
-     "tabs",
-     "<all_urls>"
+     "https://*/*"
      ],
     "content_security_policy": "script-src 'self' https://www.youtube.com; object-src 'self'"
   }
