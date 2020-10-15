@@ -26,7 +26,7 @@
 <!-- ABOUT THE PROJECT -->
 Watch YouTube videos from 0.1x to 10x speed.  Use the slider bar, or the plus/minus keys.
 
-[![SpeedTube Slider Bar][slider-bar]](https://i.ibb.co/FsxYqyY/image.png)
+![SpeedTube Slider Bar](https://i.ibb.co/FsxYqyY/image.png)
 
 ### Installation
 
@@ -60,20 +60,3 @@ Distributed under the MIT License. See `LICENSE` for more information.
 Your Name - [@WayfaringWillow](https://twitter.com/WayfaringWillow)
 
 Project Link: [https://github.com/KurtLehnardt/speedTube](https://github.com/KurtLehnardt/speedTube)
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/KurtLehnardt/repo.svg?style=flat-square
-[contributors-url]: https://github.com/KurtLehnardt/repo/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/KurtLehnardt/repo.svg?style=flat-square
-[forks-url]: https://github.com/KurtLehnardt/repo/network/members
-[stars-shield]: https://img.shields.io/github/stars/KurtLehnardt/repo.svg?style=flat-square
-[stars-url]: https://github.com/KurtLehnardt/repo/stargazers
-[issues-shield]: https://img.shields.io/github/issues/KurtLehnardt/repo.svg?style=flat-square
-[issues-url]: https://github.com/KurtLehnardt/repo/issues
-[license-shield]: https://img.shields.io/github/license/KurtLehnardt/repo.svg?style=flat-square
-[license-url]: https://github.com/KurtLehnardt/repo/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/KurtLehnardt
-[product-screenshot]: images/screenshot.png
