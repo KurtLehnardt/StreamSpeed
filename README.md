@@ -1,19 +1,3 @@
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
-<!-- TABLE OF CONTENTS -->
 ## Table of Contents
 
 * [About the Project](#about-the-project)
@@ -23,7 +7,6 @@
 
 
 
-<!-- ABOUT THE PROJECT -->
 Watch YouTube videos from 0.1x to 10x speed.  Use the slider bar, or the plus/minus keys.
 
 ![SpeedTube Slider Bar](https://i.ibb.co/FsxYqyY/image.png)
@@ -57,6 +40,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@WayfaringWillow](https://twitter.com/WayfaringWillow)
-
-Project Link: [https://github.com/KurtLehnardt/speedTube](https://github.com/KurtLehnardt/speedTube)
+Kurt Lehnardt- [@WayfaringWillow](https://twitter.com/WayfaringWillow)
