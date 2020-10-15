@@ -1,11 +1,8 @@
 chrome.tabs.executeScript({
     code: `
-    console.log('doc', document.body);
     let container = document.getElementsByClassName('style-scope ytd-video-primary-info-renderer')[0];
     let slider = document.getElementById('speedSlider');
     let video = document.getElementsByTagName('video')[0];
-    console.log('slider is:', slider);
-    console.log('container is:', container);
     if (!slider){
         let br = document.createElement('br');
 
@@ -53,14 +50,12 @@ chrome.tabs.executeScript({
 
     function updateSpeed(){
         video.playbackRate = slider.value;
-        console.log('speed is:', video.playbackRate);
         updateSliderLabel(video.playbackRate)
     }
 
     function resetSpeed(){
         slider.value = 1.0;
         video.playbackRate = 1;
-        console.log('speed is:', video.playbackRate);
         updateSliderLabel(video.playbackRate)
     }
 
@@ -70,16 +65,28 @@ chrome.tabs.executeScript({
         if (currentSpeed.length === 1){
             currentSpeed = currentSpeed + '.0';
         }
+        let sliderVal = speed * 10
         sliderLabel.innerText = currentSpeed;
-        
-        let min = range.min ? range.min : 0;
-        let max = range.max ? range.max : 100;
-        let newVal = Number(((speed - min) * 100) / (max - min));
-        sliderLabel.style.left = 'calc(' + newVal + '% + (' + (8 - newVal * 0.15) + 'px))';
+        sliderLabel.style.left = 'calc(' + sliderVal + '% + (' + (8 - sliderVal * 0.4) + 'px))';
     }
+
+    function changeSpeedWithKeys(event){
+        if (event.keyCode ===  187 && video.playbackRate < 10){
+            video.playbackRate = (video.playbackRate += 0.1).toFixed(1)
+        }
+        if (event.keyCode === 189 && video.playbackRate > 0.1){
+            video.playbackRate = (video.playbackRate -= 0.1).toFixed(1)
+        }
+        if (event.keyCode  === 8){
+            video.playbackRate = 1.0
+        }
+        updateSliderLabel(video.playbackRate.toFixed(1))
+        slider.value = video.playbackRate.toFixed(1)
+    }               
 
     slider.addEventListener('mouseup', updateSpeed)
     resetButton.addEventListener('click', resetSpeed)
+    document.addEventListener('keydown', changeSpeedWithKeys)
     updateSliderLabel(1)
 
     `
