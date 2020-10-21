@@ -33,8 +33,7 @@ Watch YouTube videos from 0.1x to 10x speed.  Use the slider bar, or the plus/mi
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
+Distributed under the MIT License.
 
 
 <!-- CONTACT -->
