@@ -1,10 +1,10 @@
 {
     "manifest_version": 2,
-  
+
     "name": "SpeedTube",
-    "description": "Fine-tune YouTube video speed, from 0.1x to 10x",
-    "version": "1.0",
-  
+    "description": "Fine-tune Netflix and YouTube speed. Use arrow keys to adjust, backspace to reset.",
+    "version": "1.2",
+
     "browser_action": {
      "default_icon": {
         "19": "images/play19.png",
@@ -15,12 +15,10 @@
     },
     "icons": { "16": "images/play16.png",
                "48": "images/play48.png",
-               "128": "images/play128.png" 
+               "128": "images/play128.png"
     },
     "permissions": [
       "activeTab"
      ],
     "content_security_policy": "script-src 'self' https://www.youtube.com; object-src 'self'"
   }
-
-  
