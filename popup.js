@@ -1,6 +1,15 @@
 chrome.tabs.executeScript({
     code: `
-    let container = document.getElementsByClassName('style-scope ytd-video-primary-info-renderer')[0];
+    let container
+    let source
+    if (document.location.href.includes('youtube')){
+        source = 'youtube'
+        container = document.getElementsByClassName('style-scope ytd-video-primary-info-renderer')[0]
+    } else if (document.location.href.includes('netflix')){
+        source = 'netflix'
+        container = document.getElementsByClassName('watch-video')[0]
+    }
+    
     let slider = document.getElementById('speedSlider');
     let video = document.getElementsByTagName('video')[0];
     if (!slider){
@@ -8,7 +17,11 @@ chrome.tabs.executeScript({
 
         let div = document.createElement('div');
         div.id = 'sliderContainer';
-        div.style.cssText = 'position: relative; margin: 0 auto 3rem';
+        if (source === 'youtube') {
+            div.style.cssText = 'position: relative; margin: 0 auto 3rem';
+        } else if (source === 'netflix'){
+            div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
+        }
 
 
         let title = document.createElement('span');
@@ -60,6 +73,9 @@ chrome.tabs.executeScript({
     }
 
     function updateSliderLabel(speed){
+        if (source === 'netflix') {
+            showAndHideSlider()
+        }
         let sliderLabel = document.getElementById('sliderLabel');
         let currentSpeed = speed.toString();
         if (currentSpeed.length === 1){
@@ -68,6 +84,16 @@ chrome.tabs.executeScript({
         let sliderVal = speed * 10
         sliderLabel.innerText = currentSpeed;
         sliderLabel.style.left = 'calc(' + sliderVal + '% + (' + (8 - sliderVal * 0.4) + 'px))';
+    }
+
+    let fadingOut = false
+    function showAndHideSlider(){
+        let sliderContainer = document.getElementById('sliderContainer')
+        sliderContainer.style.display = 'block'
+        if (!fadingOut) {
+            let fadeOut = setTimeout(()=>{sliderContainer.style.display = 'none'; fadingOut = false}, 3000)
+            fadingOut = true
+            }
     }
 
     function changeSpeedWithKeys(event){
@@ -87,7 +113,11 @@ chrome.tabs.executeScript({
     slider.addEventListener('mouseup', updateSpeed)
     resetButton.addEventListener('click', resetSpeed)
     document.addEventListener('keydown', changeSpeedWithKeys)
+    if (source === 'netflix') {
+        document.addEventListener('mousemove', showAndHideSlider)
+    }
     updateSliderLabel(1)
+
 
     `
 })
