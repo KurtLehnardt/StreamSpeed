@@ -117,7 +117,5 @@ chrome.tabs.executeScript({
         document.addEventListener('mousemove', showAndHideSlider)
     }
     updateSliderLabel(1)
-
-
     `
 })
