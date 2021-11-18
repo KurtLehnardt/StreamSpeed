@@ -7,7 +7,7 @@
 
 
 
-Watch YouTube videos from 0.1x to 10x speed.  Use the slider bar, or the plus/minus keys.
+Fine tune the playback speed of Netflix and YouTube videos from 0.1x to 10x speed.  Use the slider bar, or the plus/minus keys. Backspace to reset to 1x.
 
 ![SpeedTube Slider Bar](https://i.ibb.co/FsxYqyY/image.png)
 
@@ -25,9 +25,9 @@ Watch YouTube videos from 0.1x to 10x speed.  Use the slider bar, or the plus/mi
 
 6.  Click the Extension Manager icon (Puzzle Piece), and pin Speed Tube to your extension bar
 
-7. Navigate to a YouTube video, and click the Speed Tube icon.
+7. Navigate to a Netflix or YouTube video, and click the Speed Tube icon.
 
-8. Use the plus/minus/backspace key to change the video speed, or click on the slide bar
+8. Use the plus/minus/backspace key to change the video speed, or click on the slider bar. Backspace resets the playback speed.
 
 
 <!-- LICENSE -->
