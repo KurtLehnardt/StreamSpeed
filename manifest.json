@@ -11,7 +11,7 @@
       "38": "images/play38.png"
    },
    "default_popup": "popup.html",
-   "default_title": "SpeedTube"
+   "default_title": "StreamSpeed"
   },
   "icons": { "16": "images/play16.png",
              "48": "images/play48.png",
