@@ -7,7 +7,7 @@
 
 
 
-Fine tune the playback speed of Netflix and YouTube videos from 0.1x to 10x speed.  Use the slider bar, or the plus/minus keys. Backspace to reset to 1x.
+Fine tune the playback speed of popular streaming services, including Netflix, HBO Max, Amazon Prime Video, and YouTube, from 0.1x to 10x speed.  Use the slider bar, or the plus/minus keys. Backspace to reset to 1x.
 
 ![SpeedTube Slider Bar](https://i.ibb.co/FsxYqyY/image.png)
 
