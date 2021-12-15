@@ -8,10 +8,22 @@ chrome.tabs.executeScript({
     } else if (document.location.href.includes('netflix')){
         source = 'netflix'
         container = document.getElementsByClassName('watch-video')[0]
+    } else if (document.location.href.includes('amazon')){
+        source = 'amazon'
+        container = document.getElementsByClassName('webPlayerContainer')[0]
+    } else if (document.location.href.includes('hbo')){
+        source = 'hbo'
+        container = document.getElementsByClassName('default')[0]
     }
     
     let slider = document.getElementById('speedSlider');
-    let video = document.getElementsByTagName('video')[0];
+    let video
+    if (source === 'amazon'){
+        vid_elem = document.getElementsByTagName('video')
+        video = vid_elem[vid_elem.length-1]
+    } else {
+        video = document.getElementsByTagName('video')[0];
+    }
     if (!slider){
         let br = document.createElement('br');
 
@@ -20,6 +32,10 @@ chrome.tabs.executeScript({
         if (source === 'youtube') {
             div.style.cssText = 'position: relative; margin: 0 auto 3rem';
         } else if (source === 'netflix'){
+            div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
+        } else if (source === 'amazon'){
+            div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
+        } else if (source === 'hbo'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
         }
 
@@ -73,7 +89,7 @@ chrome.tabs.executeScript({
     }
 
     function updateSliderLabel(speed){
-        if (source === 'netflix') {
+        if (source === 'netflix' || source === 'amazon' || source === 'hbo' ) {
             showAndHideSlider()
         }
         let sliderLabel = document.getElementById('sliderLabel');
@@ -113,7 +129,7 @@ chrome.tabs.executeScript({
     slider.addEventListener('mouseup', updateSpeed)
     resetButton.addEventListener('click', resetSpeed)
     document.addEventListener('keydown', changeSpeedWithKeys)
-    if (source === 'netflix') {
+    if (source === 'netflix' || source === 'amazon' || source === 'hbo'){
         document.addEventListener('mousemove', showAndHideSlider)
     }
     updateSliderLabel(1)
