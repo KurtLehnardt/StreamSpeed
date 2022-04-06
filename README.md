@@ -13,6 +13,8 @@ Fine tune the playback speed of popular streaming services, including Netflix, H
 
 ### Installation
 
+0. Now [installable via Chrome Web Store](https://chrome.google.com/webstore/detail/streamspeed/gamoagmfeikdnkmoddkieabhajepkbpj)
+
 1. Download the .zip project folder
 
 2. Extract the contents
