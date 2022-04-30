@@ -14,6 +14,9 @@ chrome.tabs.executeScript({
     } else if (document.location.href.includes('hbo')){
         source = 'hbo'
         container = document.getElementsByClassName('default')[0]
+    } else if (document.location.href.includes('acloud.guru')){
+        source = 'acloudguru'
+        container = document.getElementsByClassName('player-fullscreen-wrapper')[0]
     }
     
     let slider = document.getElementById('speedSlider');
@@ -37,6 +40,8 @@ chrome.tabs.executeScript({
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
         } else if (source === 'hbo'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
+        } else if (source === 'acloudguru'){
+            div.style.cssText = 'position: absolute; margin: 0px auto 3rem; z-index: 9999; width: 100%'
         }
 
 
@@ -107,7 +112,9 @@ chrome.tabs.executeScript({
         let sliderContainer = document.getElementById('sliderContainer')
         sliderContainer.style.display = 'block'
         if (!fadingOut) {
-            let fadeOut = setTimeout(()=>{sliderContainer.style.display = 'none'; fadingOut = false}, 3000)
+            let fadeOut = setTimeout(()=>{
+                sliderContainer.style.display = 'none'; fadingOut = false;
+            }, 3000)
             fadingOut = true
             }
     }
@@ -129,9 +136,30 @@ chrome.tabs.executeScript({
     slider.addEventListener('mouseup', updateSpeed)
     resetButton.addEventListener('click', resetSpeed)
     document.addEventListener('keydown', changeSpeedWithKeys)
-    if (source === 'netflix' || source === 'amazon' || source === 'hbo'){
+    if (source !== 'youtube'){
         document.addEventListener('mousemove', showAndHideSlider)
     }
     updateSliderLabel(1)
+    if (source === 'hbo'){
+        let elements = [...document.getElementsByTagName("*")]
+        for (let i in elements){
+            elements[i].style.cursor = 'none'
+        }
+        document.addEventListener('mousemove', () => {
+            for (let i in elements){
+                elements[i].style.cursor = 'auto'
+            }
+            setTimeout(()=>{
+                for (let i in elements){
+                    elements[i].style.cursor = 'none'
+                }
+            }, 3000)
+        })
+    }
+    if (source === 'acloudguru'){
+        let resetButton = document.getElementById('resetButton')
+        resetButton.style.right = '10vw'
+        resetButton.style.position = 'absolute'
+    }
     `
 })
