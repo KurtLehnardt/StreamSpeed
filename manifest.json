@@ -3,7 +3,7 @@
 
   "name": "StreamSpeed",
   "description": "Fine-tune video speed of popular streaming services. Use arrow keys to adjust, backspace to reset.",
-  "version": "1.3",
+  "version": "1.4",
 
   "browser_action": {
    "default_icon": {
