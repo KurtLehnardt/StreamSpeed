@@ -10,10 +10,10 @@ chrome.tabs.executeScript({
         container = document.getElementsByClassName('watch-video')[0]
     } else if (document.location.href.includes('amazon')){
         source = 'amazon'
-        container = document.getElementsByClassName('webPlayerContainer')[0]
+        container = document.getElementsByClassName('webPlayerSDKContainer')[0]
     } else if (document.location.href.includes('hbo')){
         source = 'hbo'
-        container = document.getElementsByClassName('default')[0]
+        container = document.getElementsByClassName('default')[17]
     } else if (document.location.href.includes('acloud.guru')){
         source = 'acloudguru'
         container = document.getElementsByClassName('player-fullscreen-wrapper')[0]
@@ -37,7 +37,7 @@ chrome.tabs.executeScript({
         } else if (source === 'netflix'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
         } else if (source === 'amazon'){
-            div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
+            div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999; width: 100%'
         } else if (source === 'hbo'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
         } else if (source === 'acloudguru'){
