@@ -11,8 +11,8 @@ chrome.tabs.executeScript({
     A new auto hide feature has been added so the slider bar doesn't interfere with full screen viewing. It appears when you move your mouse or press the +/- keys and 
     then disappears after a few seconds.
     */
-    let container
-    let source
+    var container
+    var source
     if (document.location.href.includes('youtube')){
         source = 'youtube'
         container = document.getElementsByClassName('style-scope ytd-video-primary-info-renderer')[0]
@@ -30,8 +30,8 @@ chrome.tabs.executeScript({
         container = document.getElementsByClassName('player-fullscreen-wrapper')[0]
     }
     
-    let slider = document.getElementById('speedSlider');
-    let video
+    var slider = document.getElementById('speedSlider');
+    var video
     if (source === 'amazon'){
         vid_elem = document.getElementsByTagName('video')
         video = vid_elem[vid_elem.length-1]
@@ -39,9 +39,9 @@ chrome.tabs.executeScript({
         video = document.getElementsByTagName('video')[0];
     }
     if (!slider){
-        let br = document.createElement('br');
+        var br = document.createElement('br');
 
-        let div = document.createElement('div');
+        var div = document.createElement('div');
         div.id = 'sliderContainer';
         if (source === 'youtube') {
             div.style.cssText = 'position: relative; margin: 0 auto 3rem';
@@ -56,17 +56,17 @@ chrome.tabs.executeScript({
         }
 
 
-        let title = document.createElement('span');
+        var title = document.createElement('span');
         title.id = 'sliderTitle';
         title.innerText = 'Change video speed';
         title.style.cssText = 'color: rgb(221, 149, 15); font-size: 1.5em; text-align: center;'
 
-        let sliderLabel = document.createElement('output');
+        var sliderLabel = document.createElement('output');
         sliderLabel.id = 'sliderLabel';
         sliderLabel.innerText = '1';
         sliderLabel.style.cssText = 'position: absolute; background-color: rgb(221, 149, 15); color: white; font-size: 1.5em; text-align: center; padding: 3px 8px; top: 105%;'
 
-        let resetButton = document.createElement('button');
+        var resetButton = document.createElement('button');
         resetButton.id = 'resetButton';
         resetButton.innerText = 'Reset'
         resetButton.style.cssText = 'float: right; color: rgb(221, 149, 15); background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;'
@@ -91,7 +91,7 @@ chrome.tabs.executeScript({
     } 
 
     slider = document.getElementById('speedSlider');
-    let resetButton = document.getElementById('resetButton');
+    var resetButton = document.getElementById('resetButton');
 
     function updateSpeed(){
         video.playbackRate = slider.value;
@@ -108,22 +108,22 @@ chrome.tabs.executeScript({
         if (source === 'netflix' || source === 'amazon' || source === 'hbo' ) {
             showAndHideSlider()
         }
-        let sliderLabel = document.getElementById('sliderLabel');
-        let currentSpeed = speed.toString();
+        var sliderLabel = document.getElementById('sliderLabel');
+        var currentSpeed = speed.toString();
         if (currentSpeed.length === 1){
             currentSpeed = currentSpeed + '.0';
         }
-        let sliderVal = speed * 10
+        var sliderVal = speed * 10
         sliderLabel.innerText = currentSpeed;
         sliderLabel.style.left = 'calc(' + sliderVal + '% + (' + (8 - sliderVal * 0.4) + 'px))';
     }
 
-    let fadingOut = false
+    var fadingOut = false
     function showAndHideSlider(){
-        let sliderContainer = document.getElementById('sliderContainer')
+        var sliderContainer = document.getElementById('sliderContainer')
         sliderContainer.style.display = 'block'
         if (!fadingOut) {
-            let fadeOut = setTimeout(()=>{
+            var fadeOut = setTimeout(()=>{
                 sliderContainer.style.display = 'none'; fadingOut = false;
             }, 3000)
             fadingOut = true
@@ -152,23 +152,23 @@ chrome.tabs.executeScript({
     }
     updateSliderLabel(1)
     if (source === 'hbo'){
-        let elements = [...document.getElementsByTagName("*")]
-        for (let i in elements){
+        var elements = [...document.getElementsByTagName("*")]
+        for (var i in elements){
             elements[i].style.cursor = 'none'
         }
         document.addEventListener('mousemove', () => {
-            for (let i in elements){
-                elements[i].style.cursor = 'auto'
+            for (var j in elements){
+                elements[j].style.cursor = 'auto'
             }
             setTimeout(()=>{
-                for (let i in elements){
-                    elements[i].style.cursor = 'none'
+                for (var k in elements){
+                    elements[k].style.cursor = 'none'
                 }
             }, 3000)
         })
     }
     if (source === 'acloudguru'){
-        let resetButton = document.getElementById('resetButton')
+        var resetButton = document.getElementById('resetButton')
         resetButton.style.right = '10vw'
         resetButton.style.position = 'absolute'
     }
