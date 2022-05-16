@@ -16,7 +16,7 @@ chrome.tabs.executeScript({
     if (document.location.href.includes('kanopy')){
         source = 'kanopy'
         container = document.getElementsByClassName('vjs-tech')[0]
-    if (document.location.href.includes('youtube')){
+    } else if (document.location.href.includes('youtube')){
         source = 'youtube'
         container = document.getElementsByClassName('style-scope ytd-video-primary-info-renderer')[0]
     } else if (document.location.href.includes('netflix')){
