@@ -13,6 +13,9 @@ chrome.tabs.executeScript({
     */
     var container
     var source
+    if (document.location.href.includes('kanopy')){
+        source = 'kanopy'
+        container = document.getElementsByClassName('vjs-tech')[0]
     if (document.location.href.includes('youtube')){
         source = 'youtube'
         container = document.getElementsByClassName('style-scope ytd-video-primary-info-renderer')[0]
@@ -49,7 +52,7 @@ chrome.tabs.executeScript({
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
         } else if (source === 'amazon'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999; width: 100%'
-        } else if (source === 'hbo'){
+        } else if (source === 'hbo' || source === 'kanopy'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999'
         } else if (source === 'acloudguru'){
             div.style.cssText = 'position: absolute; margin: 0px auto 3rem; z-index: 9999; width: 100%'
@@ -105,7 +108,7 @@ chrome.tabs.executeScript({
     }
 
     function updateSliderLabel(speed){
-        if (source === 'netflix' || source === 'amazon' || source === 'hbo' ) {
+        if (source !== 'youtube') {
             showAndHideSlider()
         }
         var sliderLabel = document.getElementById('sliderLabel');
