@@ -1,3 +1,6 @@
+// update chrome.tabs to chrome.scripts
+// https://developer.chrome.com/docs/extensions/reference/scripting/#method-executeScript
+// user v3 or higher in manifest
 chrome.tabs.executeScript({
     code: `
     /*
@@ -125,6 +128,8 @@ chrome.tabs.executeScript({
     function showAndHideSlider(){
         var sliderContainer = document.getElementById('sliderContainer')
         // TODO fix this ease in/out
+        // look into using https://developer.chrome.com/docs/extensions/reference/tabs/#method-insertCSS
+        // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/insertCSS
         sliderContainer.style.cssText = sliderContainer.style.cssText.split('transition: .5s ease-out;')[0]
         sliderContainer.style.cssText += 'transition: .5s ease-in;'
         sliderContainer.style.display = 'block'
@@ -181,5 +186,25 @@ chrome.tabs.executeScript({
         resetButton.style.right = '10vw'
         resetButton.style.position = 'absolute'
     }
+
+    function checkScrollDirection(event) {
+        event.preventDefault()
+        if (checkScrollDirectionIsUp(event)) {
+            if ((Math.ceil(video.volume * 100) / 100 ) < 1) video.volume = (Math.round(video.volume * 100) / 100 + 0.02)
+        } else {
+            if ((Math.floor(video.volume * 100) / 100) >= 0.02) video.volume = (Math.round(video.volume * 100) / 100 - 0.02)
+        }
+        return false
+    }
+
+    function checkScrollDirectionIsUp(event) {
+        if (event.wheelDelta) {
+            return event.wheelDelta > 0;
+        }
+        return event.deltaY < 0;
+    }
+
+    window.addEventListener('wheel', checkScrollDirection, { passive: false });
+
     `
 })
