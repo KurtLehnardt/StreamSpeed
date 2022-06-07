@@ -60,12 +60,6 @@ chrome.tabs.executeScript({
         } else if (source === 'acloudguru'){
             div.style.cssText = 'position: absolute; margin: 0px auto 3rem; z-index: 9999; width: 100%;'
         }
-        
-
-        var title = document.createElement('span')
-        title.id = 'sliderTitle'
-        title.innerText = 'Change video speed'
-        title.style.cssText = 'color: rgb(221, 149, 15); font-size: 1.5em; text-align: center;'
 
         var sliderLabel = document.createElement('output')
         sliderLabel.id = 'sliderLabel'
@@ -77,6 +71,11 @@ chrome.tabs.executeScript({
         resetButton.innerText = 'Reset'
         resetButton.style.cssText = 'float: right; color: rgb(221, 149, 15); background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;'
 
+        var toggleScrollVolumeButton = document.createElement('button')
+        toggleScrollVolumeButton.id = 'toggleScrollVolumeButton'
+        toggleScrollVolumeButton.innerText = 'Volume Scroll'
+        toggleScrollVolumeButton.style.cssText = 'float: left; color: rgb(221, 149, 15); background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;'
+
         range = document.createElement('input')
         range.type = 'range'
         range.id = 'speedSlider'
@@ -87,8 +86,8 @@ chrome.tabs.executeScript({
         range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100%;'
 
         div.prepend(br)
-        div.appendChild(title)
         div.appendChild(resetButton)
+        div.appendChild(toggleScrollVolumeButton)
         div.appendChild(sliderLabel)
         div.appendChild(br)
         div.appendChild(range)
@@ -204,7 +203,18 @@ chrome.tabs.executeScript({
         return event.deltaY < 0;
     }
 
-    window.addEventListener('wheel', checkScrollDirection, { passive: false });
-
+    var scrollVolume = false
+    function toggleScrollVolume(){
+        console.log('clicked')
+        if (!scrollVolume) {
+            window.addEventListener('wheel', checkScrollDirection, { passive: false })
+            scrollVolume = true
+        } else {
+            window.removeEventListener('wheel', checkScrollDirection, { passive: false })
+            scrollVolume = false
+        }
+    }
+    var scrollVolumeButton = document.getElementById('toggleScrollVolumeButton')
+    scrollVolumeButton.addEventListener('click', toggleScrollVolume)
     `
 })
