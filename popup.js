@@ -34,6 +34,9 @@ chrome.tabs.executeScript({
     } else if (document.location.href.includes('acloud.guru')){
         source = 'acloudguru'
         container = document.getElementsByClassName('player-fullscreen-wrapper')[0]
+    } else if (document.location.href.includes('disney')){
+        source = 'disney'
+        container = document.getElementById('app_body_content')
     }
     
     var slider = document.getElementById('speedSlider')
@@ -53,8 +56,10 @@ chrome.tabs.executeScript({
             div.style.cssText = 'position: relative; margin: 0 auto 3rem;'
         } else if (source === 'netflix'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999;'
+        } else if (source === 'disney'){
+            div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999; width: 100%; top: 5vh;'
         } else if (source === 'amazon'){
-            div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999; width: 100%;'
+            div.style.cssText = 'position: fixed !important; margin: 0px auto 3rem; z-index: 9999; width: 100%; top: 8vh;'
         } else if (source === 'hbo' || source === 'kanopy'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999;'
         } else if (source === 'acloudguru'){
