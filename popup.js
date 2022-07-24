@@ -21,7 +21,7 @@ chrome.tabs.executeScript({
         container = document.getElementById('vjs_video_3')
     } else if (document.location.href.includes('youtube')){
         source = 'youtube'
-        container = document.getElementsByClassName('style-scope ytd-video-primary-info-renderer')[0]
+        container = document.getElementById('above-the-fold')
     } else if (document.location.href.includes('netflix')){
         source = 'netflix'
         container = document.getElementsByClassName('watch-video')[0]
