@@ -2,7 +2,7 @@
   "manifest_version": 2,
 
   "name": "StreamSpeed",
-  "description": "Fine-tune video speed of popular streaming services. Use arrow keys to adjust, backspace to reset.",
+  "description": "Adjust playback speed and volume",
   "version": "1.7.3",
 
   "browser_action": {
