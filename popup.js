@@ -93,9 +93,9 @@ chrome.tabs.executeScript({
         range = document.createElement('input')
         range.type = 'range'
         range.id = 'speedSlider'
-        range.setAttribute('min', '0.05')
+        range.setAttribute('min', '0.1')
         range.setAttribute('max', '10')
-        range.setAttribute('step', '0.05')
+        range.setAttribute('step', '0.1')
         range.setAttribute('value', '1')
         range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100vw;'
 
@@ -165,7 +165,7 @@ chrome.tabs.executeScript({
                 video.playbackRate = (video.playbackRate += 0.1).toFixed(1)
             }
         }
-        if ((event.keyCode === 189 || event.keyCode === 219) && video.playbackRate > 0.05){
+        if ((event.keyCode === 189 || event.keyCode === 219) && video.playbackRate > 0.1){
             if (video.playbackRate <= 1.5){
                 video.playbackRate = (video.playbackRate -= 0.05).toFixed(2)
             } else if (video.playbackRate >= 1.5){
