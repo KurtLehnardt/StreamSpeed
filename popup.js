@@ -39,7 +39,7 @@ chrome.tabs.executeScript({
         container = document.getElementById('app_body_content')
     } else {
         source = 'unknown'
-        container = [...document.getElementsByTagName('body')][0]
+        container = [...document.getElementsByTagName('html')][0]
     }
     
     var slider = document.getElementById('speedSlider')
