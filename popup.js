@@ -47,7 +47,7 @@ chrome.tabs.executeScript({
     if (source === 'amazon'){
         vid_elem = document.getElementsByTagName('video')
         video = vid_elem[vid_elem.length-1]
-    } else if (!!document.getElementsByTagName('iframe')[0].contentDocument) {
+    } else if (!!document.getElementsByTagName('iframe')[0].contentDocument && document.getElementsByTagName('iframe')[0].contentDocument.body.innerHTML.includes('video')) {
         video = document.getElementsByTagName('iframe')[0].contentDocument.getElementsByTagName('video')[0]
     } else {
         video = document.getElementsByTagName('video')[0]
@@ -171,7 +171,12 @@ chrome.tabs.executeScript({
 
     slider.addEventListener('mouseup', updateSpeed)
     resetButton.addEventListener('click', resetSpeed)
-    document.addEventListener('keydown', changeSpeedWithKeys)
+    if (source === 'unknown' && !!document.getElementsByTagName('iframe')[0].contentDocument && document.getElementsByTagName('iframe')[0].contentDocument.body.innerHTML.includes('video')) {
+        document.getElementsByTagName('iframe')[0].contentDocument.addEventListener('keydown', changeSpeedWithKeys)
+        document.getElementsByTagName('iframe')[0].contentDocument.addEventListener('mousemove', showAndHideSlider)
+    } else {
+        document.addEventListener('keydown', changeSpeedWithKeys)
+    }
     if (source !== 'youtube'){
         document.addEventListener('mousemove', showAndHideSlider)
     }
