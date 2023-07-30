@@ -173,8 +173,7 @@ chrome.tabs.executeScript({
     resetButton.addEventListener('click', resetSpeed)
     if (source === 'unknown' && !!document.getElementsByTagName('iframe')[0].contentDocument && document.getElementsByTagName('iframe')[0].contentDocument.body.innerHTML.includes('video')) {
         document.getElementsByTagName('iframe')[0].contentDocument.addEventListener('keydown', changeSpeedWithKeys)
-        document.getElementsByTagName('iframe')[0].contentDocument.addEventListener('mousemove', 
-        showAndHideSlider)
+        document.getElementsByTagName('iframe')[0].contentDocument.addEventListener('mousemove', showAndHideSlider)
         document.addEventListener('keydown', changeSpeedWithKeys)
         document.addEventListener('keydown', showAndHideSlider)
     } else {
