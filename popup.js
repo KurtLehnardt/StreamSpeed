@@ -47,7 +47,7 @@ chrome.tabs.executeScript({
     if (source === 'amazon'){
         vid_elem = document.getElementsByTagName('video')
         video = vid_elem[vid_elem.length-1]
-    } else if (document.getElementsByTagName('iframe')[0].contentDocument === true) {
+    } else if (!!document.getElementsByTagName('iframe')[0].contentDocument) {
         video = document.getElementsByTagName('iframe')[0].contentDocument.getElementsByTagName('video')[0]
     } else {
         video = document.getElementsByTagName('video')[0]
