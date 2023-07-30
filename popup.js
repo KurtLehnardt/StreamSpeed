@@ -68,7 +68,7 @@ chrome.tabs.executeScript({
         } else if (source === 'acloudguru'){
             div.style.cssText = 'position: absolute; margin: 0px auto 3rem; z-index: 9999; width: 100%;'
         } else if (source === 'unknown') {
-            div.style.cssText = 'position: fixed; margin 0px auto 3rem; z-index: 99999999999;, width: 100vw;'
+            div.style.cssText = 'position: fixed; margin 0px auto 3rem; z-index: 99999999999;, width: 100vw !important;'
         }
 
         var sliderLabel = document.createElement('output')
@@ -93,7 +93,7 @@ chrome.tabs.executeScript({
         range.setAttribute('max', '10')
         range.setAttribute('step', '0.1')
         range.setAttribute('value', '1')
-        range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100%;'
+        range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100vw;'
 
         div.prepend(br)
         div.appendChild(resetButton)
