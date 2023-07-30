@@ -37,6 +37,9 @@ chrome.tabs.executeScript({
     } else if (document.location.href.includes('disney')){
         source = 'disney'
         container = document.getElementById('app_body_content')
+    } else {
+        source = 'unknown'
+        container = [...document.getElementsByTagName('body')][0]
     }
     
     var slider = document.getElementById('speedSlider')
@@ -64,6 +67,8 @@ chrome.tabs.executeScript({
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999;'
         } else if (source === 'acloudguru'){
             div.style.cssText = 'position: absolute; margin: 0px auto 3rem; z-index: 9999; width: 100%;'
+        } else if (source === 'unknown') {
+            div.style.cssText = 'position: relative; margin 0px auto 3rem; z-index: 9999;, width: 100%;'
         }
 
         var sliderLabel = document.createElement('output')
