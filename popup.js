@@ -97,7 +97,11 @@ chrome.tabs.executeScript({
         range.setAttribute('max', '10')
         range.setAttribute('step', '0.1')
         range.setAttribute('value', '1')
-        range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100vw;'
+        if (source === 'youtube') {
+            range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100%;' 
+        } else {
+            range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100vw;'
+        }
 
         div.prepend(br)
         div.appendChild(resetButton)
