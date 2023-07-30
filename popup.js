@@ -175,8 +175,8 @@ chrome.tabs.executeScript({
         if (event.keyCode  === 8 || event.keyCode === 220){
             video.playbackRate = 1.0
         }
-        updateSliderLabel(video.playbackRate.toFixed(1))
-        slider.value = video.playbackRate.toFixed(1)
+        updateSliderLabel(video.playbackRate.toFixed(2))
+        slider.value = video.playbackRate.toFixed(2)
     }               
 
     slider.addEventListener('mouseup', updateSpeed)
