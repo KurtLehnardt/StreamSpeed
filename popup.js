@@ -158,17 +158,17 @@ chrome.tabs.executeScript({
     }
 
     function changeSpeedWithKeys(event){
-        if (event.keyCode ===  187 || event.keyCode === 219){
-            if (video.playbackRate < 1.5){
+        if (event.keyCode ===  187 || event.keyCode === 221){
+            if (video.playbackRate <= 1.5){
                 video.playbackRate = (video.playbackRate += 0.05).toFixed(2)
-            } else if (video.playbackRate > 1.5){
+            } else if (video.playbackRate >= 1.5){
                 video.playbackRate = (video.playbackRate += 0.1).toFixed(1)
             }
         }
-        if ((event.keyCode === 189 || event.keyCode === 221) && video.playbackRate > 0.1){
-            if (video.playbackRate < 1.5){
+        if ((event.keyCode === 189 || event.keyCode === 219) && video.playbackRate > 0.1){
+            if (video.playbackRate <= 1.5){
                 video.playbackRate = (video.playbackRate -= 0.05).toFixed(2)
-            } else if (video.playbackRate > 1.5){
+            } else if (video.playbackRate >= 1.5){
                 video.playbackRate = (video.playbackRate -= 0.1).toFixed(1)
             }
         }
