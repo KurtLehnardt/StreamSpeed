@@ -9,7 +9,9 @@ chrome.tabs.executeScript({
     Slow playback to 0.1x so you can see sleight of hand in magic tricks, or watch an action scene unfold in slow motion. Speed up an audiobook 3x or DIY video 10x so you can get through them more quickly. Binge watch an entire 10 hour season on 3.3x speed in 3 (I suggest turning captions on at higher speeds)
     
     Use + or - keys on your keyboard to change playback speed in increments of 0.1x, or slide the orange bar below the video to adjust speed with your mouse.
-    Reset it to the default speed by pressing Backspace.
+    Reset it to the default speed by pressing Backspace. UPDATE AUGUST 2023 the open bracket [ and closed bracket ] keys now also adjust video speed. + and - 
+    interfere with the caption sizes on YouTube and some other sites. The backslash \ key resets the speed to 1.0x, because the backspace key sometimes causes
+    a browser to go back a page.
     
     A new auto hide feature has been added so the slider bar doesn't interfere with full screen viewing. It appears when you move your mouse or press the +/- keys and 
     then disappears after a few seconds.
@@ -156,13 +158,13 @@ chrome.tabs.executeScript({
     }
 
     function changeSpeedWithKeys(event){
-        if (event.keyCode ===  187 && video.playbackRate < 10){
+        if ((event.keyCode ===  187 || event.keyCode === 219) && video.playbackRate < 10){
             video.playbackRate = (video.playbackRate += 0.1).toFixed(1)
         }
-        if (event.keyCode === 189 && video.playbackRate > 0.1){
+        if (event.keyCode === 189 || event.keyCode === 221) && video.playbackRate > 0.1){
             video.playbackRate = (video.playbackRate -= 0.1).toFixed(1)
         }
-        if (event.keyCode  === 8){
+        if (event.keyCode  === 8 || event.keyCode === 220){
             video.playbackRate = 1.0
         }
         updateSliderLabel(video.playbackRate.toFixed(1))
