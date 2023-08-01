@@ -39,6 +39,9 @@ chrome.tabs.executeScript({
     } else if (document.location.href.includes('disney')){
         source = 'disney'
         container = document.getElementById('app_body_content')
+    } else if (document.location.href.includes('apple')){
+        source = 'apple'
+        container = [...document.getElementsByTagName('html')][0]
     } else {
         source = 'unknown'
         container = [...document.getElementsByTagName('html')][0]
@@ -66,11 +69,13 @@ chrome.tabs.executeScript({
         } else if (source === 'disney'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999; width: 100%; top: 5vh;'
         } else if (source === 'amazon'){
-            div.style.cssText = 'position: fixed !important; margin: 0px auto 3rem; z-index: 9999; width: 100%; top: 8vh;'
+            div.style.cssText = 'position: fixed !important; margin: 50px auto 3rem; z-index: 9999; width: 100%; top: 8vh;'
         } else if (source === 'hbo' || source === 'kanopy'){
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999;'
         } else if (source === 'acloudguru'){
             div.style.cssText = 'position: absolute; margin: 0px auto 3rem; z-index: 9999; width: 100%;'
+        } else if (source === 'apple'){
+            div.style.cssText = 'position: absolute; margin: 50px auto 3rem; z-index: 9999; width: 100%;'
         } else if (source === 'unknown') {
             div.style.cssText = 'position: fixed; margin 0px auto 3rem; z-index: 99999999999;, width: 100vw !important;'
         }
