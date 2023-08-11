@@ -75,7 +75,7 @@ chrome.tabs.executeScript({
         } else if (source === 'acloudguru'){
             div.style.cssText = 'position: absolute; margin: 0px auto 3rem; z-index: 9999; width: 100%;'
         } else if (source === 'apple'){
-            div.style.cssText = 'position: absolute; margin: 50px auto 3rem; z-index: 9999; width: 100%;'
+            div.style.cssText = 'position: fixed; margin: 50px auto 3rem; z-index: 9999; width: 100%;'
         } else if (source === 'unknown') {
             div.style.cssText = 'position: fixed; margin 0px auto 3rem; z-index: 99999999999;, width: 100vw !important;'
         }
