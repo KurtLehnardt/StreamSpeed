@@ -53,7 +53,7 @@ chrome.tabs.executeScript({
     if (source === 'amazon'){
         vid_elem = document.getElementsByTagName('video')
         video = vid_elem[vid_elem.length-1]
-    } else if (contentDocument) {
+    } else if (iframe) {
         if (!!iframe.contentDocument && iframe.contentDocument.body.innerHTML.includes('video')) {
         video = document.getElementsByTagName('iframe')[0].contentDocument.getElementsByTagName('video')[0]
         }
