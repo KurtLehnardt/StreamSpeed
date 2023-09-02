@@ -195,7 +195,7 @@ chrome.tabs.executeScript({
     resetButton.addEventListener('click', resetSpeed)
     if (source === 'unknown' && !!iframe.contentDocument && iframe.contentDocument.body.innerHTML.includes('video')) {
         iframe.contentDocument.addEventListener('keydown', changeSpeedWithKeys)
-        iframe].contentDocument.addEventListener('mousemove', showAndHideSlider)
+        iframe.contentDocument.addEventListener('mousemove', showAndHideSlider)
         document.addEventListener('keydown', changeSpeedWithKeys)
         document.addEventListener('keydown', showAndHideSlider)
     } else {
