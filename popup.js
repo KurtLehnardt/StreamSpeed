@@ -49,11 +49,14 @@ chrome.tabs.executeScript({
     
     var slider = document.getElementById('speedSlider')
     var video
+    var iframe = document.getElementsByTagName('iframe')[0]
     if (source === 'amazon'){
         vid_elem = document.getElementsByTagName('video')
         video = vid_elem[vid_elem.length-1]
-    } else if (!!document.getElementsByTagName('iframe')[0].contentDocument && document.getElementsByTagName('iframe')[0].contentDocument.body.innerHTML.includes('video')) {
+    } else if (contentDocument) {
+        if (!!iframe.contentDocument && iframe.contentDocument.body.innerHTML.includes('video')) {
         video = document.getElementsByTagName('iframe')[0].contentDocument.getElementsByTagName('video')[0]
+        }
     } else {
         video = document.getElementsByTagName('video')[0]
     }
