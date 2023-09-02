@@ -193,9 +193,9 @@ chrome.tabs.executeScript({
 
     slider.addEventListener('mouseup', updateSpeed)
     resetButton.addEventListener('click', resetSpeed)
-    if (source === 'unknown' && !!document.getElementsByTagName('iframe')[0].contentDocument && document.getElementsByTagName('iframe')[0].contentDocument.body.innerHTML.includes('video')) {
-        document.getElementsByTagName('iframe')[0].contentDocument.addEventListener('keydown', changeSpeedWithKeys)
-        document.getElementsByTagName('iframe')[0].contentDocument.addEventListener('mousemove', showAndHideSlider)
+    if (source === 'unknown' && !!iframe.contentDocument && iframe.contentDocument.body.innerHTML.includes('video')) {
+        iframe.contentDocument.addEventListener('keydown', changeSpeedWithKeys)
+        iframe].contentDocument.addEventListener('mousemove', showAndHideSlider)
         document.addEventListener('keydown', changeSpeedWithKeys)
         document.addEventListener('keydown', showAndHideSlider)
     } else {
