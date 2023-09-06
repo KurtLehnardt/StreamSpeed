@@ -50,16 +50,22 @@ chrome.tabs.executeScript({
     var slider = document.getElementById('speedSlider')
     var video
     var iframe = document.getElementsByTagName('iframe')[0]
+    try {
+        v = iframe.contentDocument.getElementsByTagName('video')[0]
+        if (v) video = v
+        console.log('iframe vid')
+    } catch (error) {
+        console.log('iframe does not have a video element', error)
+    }
     if (source === 'amazon'){
         vid_elem = document.getElementsByTagName('video')
         video = vid_elem[vid_elem.length-1]
     }
     try {
-        video = iframe.contentDocument.getElementsByTagName('video')[0]
-        console.log('iframe vid')
+        let v = document.getElementsByTagName('video')[0]
+        if (v) video = v
     } catch (error) {
-        console.log('iframe does not have a video element', error)
-        video = document.getElementsByTagName('video')[0]
+        console.log('error ', error)
     }
     
     if (!slider){
