@@ -53,13 +53,15 @@ chrome.tabs.executeScript({
     if (source === 'amazon'){
         vid_elem = document.getElementsByTagName('video')
         video = vid_elem[vid_elem.length-1]
-    } else if (iframe) {
-        if (!!iframe.contentDocument && iframe.contentDocument.body.innerHTML.includes('video')) {
-        video = document.getElementsByTagName('iframe')[0].contentDocument.getElementsByTagName('video')[0]
-        }
-    } else {
+    }
+    try {
+        video = iframe.contentDocument.getElementsByTagName('video')[0]
+        console.log('iframe vid')
+    } catch (error) {
+        console.log('iframe does not have a video element', error)
         video = document.getElementsByTagName('video')[0]
     }
+    
     if (!slider){
         var br = document.createElement('br')
 
