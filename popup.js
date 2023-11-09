@@ -110,7 +110,7 @@ chrome.tabs.executeScript({
         range.type = 'range'
         range.id = 'speedSlider'
         range.setAttribute('min', '0.1')
-        range.setAttribute('max', '10')
+        range.setAttribute('max', '16')
         range.setAttribute('step', '0.1')
         range.setAttribute('value', '1')
         if (source === 'youtube') {
@@ -154,7 +154,7 @@ chrome.tabs.executeScript({
         }
         var sliderVal = speed * 10
         sliderLabel.innerText = currentSpeed
-        sliderLabel.style.left = 'calc(' + sliderVal + '% + (' + (8 - sliderVal * 0.4) + 'px))'
+        sliderLabel.style.left = 'calc(' + sliderVal + '% + (' + (8 - sliderVal * 0.28) + 'px))'
     }
 
     var fadingOut = false
