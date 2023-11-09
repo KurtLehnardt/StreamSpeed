@@ -152,9 +152,9 @@ chrome.tabs.executeScript({
         if (currentSpeed.length === 1){
             currentSpeed = currentSpeed + '.0'
         }
-        var sliderVal = speed * 10
+        var sliderVal = speed * 10 / 16
         sliderLabel.innerText = currentSpeed
-        sliderLabel.style.left = 'calc(' + sliderVal + '% + (' + (8 - sliderVal * 0.28) + 'px))'
+        sliderLabel.style.left = 'calc(' + sliderVal * 9.3 + '% + (' + (8 - sliderVal * 0.28) + 'px))'
     }
 
     var fadingOut = false
