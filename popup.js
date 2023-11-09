@@ -53,7 +53,6 @@ chrome.tabs.executeScript({
     try {
         v = iframe.contentDocument.getElementsByTagName('video')[0]
         if (v) video = v
-        console.log('iframe vid')
     } catch (error) {
         console.log('iframe does not have a video element', error)
     }
@@ -208,7 +207,9 @@ chrome.tabs.executeScript({
             document.addEventListener('keydown', changeSpeedWithKeys)
             document.addEventListener('keydown', showAndHideSlider)
         }
-    } else {
+    } 
+    
+    if (document) {
         document.addEventListener('keydown', changeSpeedWithKeys)
     }
     if (source !== 'youtube'){
@@ -256,7 +257,6 @@ chrome.tabs.executeScript({
 
     var scrollVolume = false
     function toggleScrollVolume(){
-        console.log('clicked')
         if (!scrollVolume) {
             window.addEventListener('wheel', checkScrollDirection, { passive: false })
             scrollVolume = true
