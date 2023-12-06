@@ -1,24 +1,23 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
 
   "name": "StreamSpeed",
   "description": "Adjust playback speed and volume",
   "version": "3.0.0",
 
-  "browser_action": {
+  "action": {
    "default_icon": {
+      "16": "images/play16.png",
       "19": "images/play19.png",
-      "38": "images/play38.png"
+      "38": "images/play38.png",
+      "48": "images/play48.png",
+      "128": "images/play128.png"
    },
    "default_popup": "popup.html",
    "default_title": "StreamSpeed"
   },
-  "icons": { 
-    "16": "images/play16.png",
-    "48": "images/play48.png",
-    "128": "images/play128.png"
-  },
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "scripting"
    ]
 }
