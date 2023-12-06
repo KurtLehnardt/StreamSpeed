@@ -1,7 +1,7 @@
 // update chrome.tabs to chrome.scripts
 // https://developer.chrome.com/docs/extensions/reference/scripting/#method-executeScript
 // user v3 or higher in manifest
-chrome.tabs.executeScript({
+chrome.scripting.executeScript({
     code: `
     /*
     Fine tune the playback speed of popular streaming services, including Netflix, HBO Max, Amazon Prime Video, and YouTube, from 0.1x to 10x speed. Now includes support for aCloudGuru. Use the slider bar, or the plus/minus keys. Backspace to reset to 1x.
