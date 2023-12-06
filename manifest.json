@@ -3,7 +3,7 @@
 
   "name": "StreamSpeed",
   "description": "Adjust playback speed and volume",
-  "version": "3.0.0",
+  "version": "3.0.1",
 
   "action": {
    "default_icon": {
