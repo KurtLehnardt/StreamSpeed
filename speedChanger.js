@@ -111,7 +111,6 @@ if (!slider){
 
     var toggleScrollVolumeButton = document.createElement('button')
     var showVolumeButton = navigator.languages.some(el => el === 'ru-RU') ? 'none' : 'inherit'
-    console.log('show it?', showVolumeButton, 'site color', siteColor)
     toggleScrollVolumeButton.id = 'toggleScrollVolumeButton'
     toggleScrollVolumeButton.innerText = 'Volume Scroll'
     toggleScrollVolumeButton.style.cssText = `display: ${showVolumeButton}; float: left; color: ${siteColor}; background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;`
