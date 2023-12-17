@@ -87,19 +87,32 @@ if (!slider){
     }
 
     var sliderLabel = document.createElement('output')
+    var siteColor
+    switch (source){
+        case 'youtube':
+            siteColor = 'rgb(255, 0, 0)'
+            break;
+        case 'netflix':
+            siteColor = 'rgb(219,0,0)'
+            break;
+        case 'disney':
+            siteColor = 'rgb(17, 60, 207)'
+        default:
+            siteColor = 'rgb(221, 149, 15)'
+    }
     sliderLabel.id = 'sliderLabel'
     sliderLabel.innerText = '1'
-    sliderLabel.style.cssText = 'position: absolute; background-color: rgb(221, 149, 15); color: white; font-size: 1.5em; text-align: center; padding: 3px 8px; top: 105%;'
+    sliderLabel.style.cssText = `position: absolute; background-color: siteColor; color: white; font-size: 1.5em; text-align: center; padding: 3px 8px; top: 105%;`
 
     var resetButton = document.createElement('button')
     resetButton.id = 'resetButton'
     resetButton.innerText = 'Reset'
-    resetButton.style.cssText = 'float: right; color: rgb(221, 149, 15); background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;'
+    resetButton.style.cssText = `float: right; color: siteColor; background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;`
 
     var toggleScrollVolumeButton = document.createElement('button')
     toggleScrollVolumeButton.id = 'toggleScrollVolumeButton'
     toggleScrollVolumeButton.innerText = 'Volume Scroll'
-    toggleScrollVolumeButton.style.cssText = 'float: left; color: rgb(221, 149, 15); background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;'
+    toggleScrollVolumeButton.style.cssText = `float: left; color: siteColor); background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;`
 
     range = document.createElement('input')
     range.type = 'range'
@@ -109,14 +122,14 @@ if (!slider){
     range.setAttribute('step', '0.1')
     range.setAttribute('value', '1')
     if (source === 'youtube') {
-        range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100%;' 
+        range.style.cssText = `-webkit-appearance: none; background-color: siteColor; opacity: 0.9; width: 100%;` 
     } else {
-        range.style.cssText = '-webkit-appearance: none; background-color: rgb(221, 149, 15); opacity: 0.9; width: 100vw;'
+        range.style.cssText = `-webkit-appearance: none; background-color: siteColor; opacity: 0.9; width: 100vw;`
     }
 
     div.prepend(br)
     div.appendChild(resetButton)
-    div.appendChild(toggleScrollVolumeButton)
+    if !(navigator.languages.some(el => el === 'ru-RU')) div.appendChild(toggleScrollVolumeButton)
     div.appendChild(sliderLabel)
     div.appendChild(br)
     div.appendChild(range)
