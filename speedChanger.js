@@ -252,7 +252,11 @@ if (source === 'acloudguru'){
 function checkScrollDirection(event) {
     event.preventDefault()
     if (checkScrollDirectionIsUp(event)) {
-        if ((Math.ceil(video.volume * 100) / 100 ) < 1) video.volume = (Math.round(video.volume * 100) / 100 + 0.02)
+        if ((Math.ceil(video.volume * 100) / 100 ) < .98) {
+            video.volume = (Math.round(video.volume * 100) / 100 + 0.02)
+        } else if ((Math.ceil(video.volume * 100) / 100 ) < 1) {
+            video.volume = (Math.round(video.volume * 100) / 100 + 0.01)
+        }
     } else {
         if ((Math.floor(video.volume * 100) / 100) >= 0.02) video.volume = (Math.round(video.volume * 100) / 100 - 0.02)
     }
