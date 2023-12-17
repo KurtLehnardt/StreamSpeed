@@ -102,17 +102,19 @@ if (!slider){
     }
     sliderLabel.id = 'sliderLabel'
     sliderLabel.innerText = '1'
-    sliderLabel.style.cssText = `position: absolute; background-color: siteColor; color: white; font-size: 1.5em; text-align: center; padding: 3px 8px; top: 105%;`
+    sliderLabel.style.cssText = `position: absolute; background-color: ${siteColor}; color: white; font-size: 1.5em; text-align: center; padding: 3px 8px; top: 105%;`
 
     var resetButton = document.createElement('button')
     resetButton.id = 'resetButton'
     resetButton.innerText = 'Reset'
-    resetButton.style.cssText = `float: right; color: siteColor; background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;`
+    resetButton.style.cssText = `float: right; color: ${siteColor}; background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;`
 
     var toggleScrollVolumeButton = document.createElement('button')
+    var showVolumeButton = navigator.languages.some(el => el === 'ru-RU') ? 'none' : 'inherit'
+    console.log('show it?', showVolumeButton, 'site color', siteColor)
     toggleScrollVolumeButton.id = 'toggleScrollVolumeButton'
     toggleScrollVolumeButton.innerText = 'Volume Scroll'
-    toggleScrollVolumeButton.style.cssText = `float: left; color: siteColor); background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;`
+    toggleScrollVolumeButton.style.cssText = `display: ${showVolumeButton}; float: left; color: ${siteColor}; background: none; font-size: 1.5em; text-align: center; border: 1px solid grey; border-radius: 1px; margin-bottom: 3px;`
 
     range = document.createElement('input')
     range.type = 'range'
@@ -122,14 +124,14 @@ if (!slider){
     range.setAttribute('step', '0.1')
     range.setAttribute('value', '1')
     if (source === 'youtube') {
-        range.style.cssText = `-webkit-appearance: none; background-color: siteColor; opacity: 0.9; width: 100%;` 
+        range.style.cssText = `-webkit-appearance: none; background-color: ${siteColor}; opacity: 0.9; width: 100%;` 
     } else {
-        range.style.cssText = `-webkit-appearance: none; background-color: siteColor; opacity: 0.9; width: 100vw;`
+        range.style.cssText = `-webkit-appearance: none; background-color: ${siteColor}; opacity: 0.9; width: 100vw;`
     }
 
     div.prepend(br)
     div.appendChild(resetButton)
-    if !(navigator.languages.some(el => el === 'ru-RU')) div.appendChild(toggleScrollVolumeButton)
+    div.appendChild(toggleScrollVolumeButton)
     div.appendChild(sliderLabel)
     div.appendChild(br)
     div.appendChild(range)
@@ -162,7 +164,7 @@ function updateSliderLabel(speed){
     }
     var sliderVal = speed * 10 / 16
     sliderLabel.innerText = currentSpeed
-    sliderLabel.style.left = 'calc(' + sliderVal * 9.3 + '% + (' + (8 - sliderVal * 0.28) + 'px))'
+    sliderLabel.style.left = 'calc(' + sliderVal * 9.6 + '% + (' + (8 - sliderVal * 0.28) + 'px))'
 }
 
 var fadingOut = false
