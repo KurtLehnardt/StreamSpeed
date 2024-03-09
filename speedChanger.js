@@ -18,7 +18,7 @@ if (document.location.href.includes('kanopy')){
     source = 'kanopy'
     container = document.getElementById('vjs_video_3')
 } else if (document.location.href.includes('youtube')){
-    if (document.location.href.includes('shorts'){
+    if (document.location.href.includes('shorts')){
         source = 'unknown'
         container = [...document.getElementsByTagName('html')][0]
     } else {
