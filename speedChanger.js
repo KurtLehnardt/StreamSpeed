@@ -33,9 +33,30 @@ var observer
 
 onReady(main);
 
+// https://stackoverflow.com/a/71692555
+function querySelectorAllShadows(selector, el = document.body) {
+    // recurse on childShadows
+    const childShadows = Array.from(el.querySelectorAll('*')).
+        map(el => el.shadowRoot).filter(Boolean);
+    const childResults = childShadows.map(child => querySelectorAllShadows(selector, child));
+    // fuse all results into singular, flat array
+    const result = Array.from(el.querySelectorAll(selector));
+    return result.concat(childResults).flat();
+}
+
 function main() {
-    var container
-    var source
+    let container
+    let source
+    let scrollVolumeToggle = false
+
+    const Toast = Swal.mixin({
+        toast: true,
+        position: "top-start",
+        showConfirmButton: false,
+        timer: 1776,
+        timerProgressBar: true
+    });
+
     function checkForSource() {
         if (document.location.href.includes('kanopy')) {
             source = 'kanopy'
@@ -66,6 +87,9 @@ function main() {
         } else if (document.location.href.includes('apple')) {
             source = 'apple'
             container = [...document.getElementsByTagName('html')][0]
+        } else if (document.location.href.includes('instagram')) {
+            source = 'instagram'
+            container = [...document.getElementsByTagName('html')][0]
         } else {
             source = 'unknown'
             container = [...document.getElementsByTagName('html')][0]
@@ -76,7 +100,7 @@ function main() {
     observer = new MutationObserver(function (mutations, observer) {
         mutations.forEach(mutation => {
             let text = mutation.target.outerHTML
-            if (text.includes('yt-page-navigation-progress') && !text.includes('yt-touch-feedback-shape')){
+            if (text.includes('yt-page-navigation-progress') && !text.includes('yt-touch-feedback-shape')) {
                 checkForSource()
                 if (source !== 'shorts') deleteEverything()
             }
@@ -87,25 +111,20 @@ function main() {
         attributes: true
     });
 
-    var slider = document.getElementById('speedSlider')
-    var video
+    let slider = document.getElementById('speedSlider')
+    let video
+    let iframe = document.getElementsByTagName('iframe').length ? document.getElementsByTagName('iframe') : null
     if (source === 'amazon') {
         vid_elem = document.getElementsByTagName('video')
         video = vid_elem[vid_elem.length - 1]
-    } else if (source !== "unknown") {
-        try {
-            let v = document.getElementsByTagName('video')[0]
-            if (v) video = v
-        } catch (error) {
-            console.log('error ', error)
-        }
     } else {
-        var iframe = document.getElementsByTagName('iframe')[0]
         try {
-            v = iframe.contentDocument.getElementsByTagName('video')[0]
-            if (v) video = v
+            let v = querySelectorAllShadows('video')
+            let y = [...document.getElementsByTagName('video')]
+            video = v.length > y.length ? v[0] : y[0]
+            console.log('video', video)
         } catch (error) {
-            console.log('iframe does not have a video element', error)
+            console.log('Could not find a video element:', error)
         }
     }
 
@@ -129,7 +148,9 @@ function main() {
         } else if (source === 'apple') {
             div.style.cssText = 'position: fixed; margin: 50px auto 3rem; z-index: 9999; width: 100%;'
         } else if (source === 'unknown' || source === 'shorts') {
-            div.style.cssText = 'position: fixed; margin 0px auto 3rem; z-index: 99999999999;, width: 98vw !important;'
+            div.style.cssText = 'position: fixed; margin 0px auto 3rem; z-index: 9999999;, width: 98vw !important;'
+        } else if (source === 'instagram') {
+            div.style.cssText = 'position: fixed; margin 0px auto 3rem; z-index: 9999999;, width: 98vw !important;'
         }
         div.style.cssText += 'transition: all 450ms ease'
 
@@ -137,18 +158,24 @@ function main() {
         var siteColor
         switch (source) {
             case 'youtube':
-                siteColor = 'rgb(255, 0, 0)'
+                siteColor = 'rgb(255,0,0)'
                 break;
             case 'shorts':
-                siteColor = 'rgb(255, 0, 0)'
+                siteColor = 'rgb(255,0,0)'
                 break;
             case 'netflix':
                 siteColor = 'rgb(219,0,0)'
                 break;
             case 'disney':
-                siteColor = 'rgb(17, 60, 207)'
+                siteColor = 'rgb(0,110,153)';
+                break;
             default:
                 siteColor = 'rgb(221, 149, 15)'
+
+
+            console.log('site color', siteColor)
+            console.log('source ', source)
+
         }
         sliderLabel.id = 'sliderLabel'
         sliderLabel.innerText = '1'
@@ -163,7 +190,7 @@ function main() {
         deleteEverythingButton.id = 'deleteEverything'
         deleteEverythingButton.innerText = 'X'
         deleteEverythingButton.title = "Close Stream Speed"
-        deleteEverythingButton.style.cssText = `float: none; margin-left: 40%; color: white; background: red; font-size: 1.5em; text-align: center; border: 2px solid red; border-radius: 50%;`
+        deleteEverythingButton.style.cssText = `float: none; margin-left: 40%; color: white; background: red; font-size: 1.1em; text-align: center; border: 2px solid red; border-radius: 50%; opacity: 0.7`
 
 
         var toggleScrollVolumeButton = document.createElement('button')
@@ -217,14 +244,32 @@ function main() {
     var resetButton = document.getElementById('resetButton')
 
     function updateSpeed() {
-        video.playbackRate = slider.value
-        updateSliderLabel(video.playbackRate)
+        if (source === 'instagram' || source === 'unknown') {
+            let videos = querySelectorAllShadows('video')
+            videos.map(vid => {
+                video = vid
+                video.playbackRate = slider.value
+            })
+            updateSliderLabel(videos[0].playbackRate)
+        } else {
+            video.playbackRate = slider.value
+            updateSliderLabel(video.playbackRate)
+        }
     }
 
     function resetSpeed() {
         slider.value = 1.0
-        video.playbackRate = 1
-        updateSliderLabel(video.playbackRate)
+        if (source === 'instagram' || source === 'unknown') {
+            let videos = querySelectorAllShadows('video')
+            videos.map(vid => {
+                video = vid
+                video.playbackRate = 1
+            })
+            updateSliderLabel(videos[0].playbackRate)
+        } else {
+            video.playbackRate = 1
+            updateSliderLabel(video.playbackRate)
+        }
     }
 
     function updateSliderLabel(speed) {
@@ -267,6 +312,9 @@ function main() {
     }
 
     function changeSpeedWithKeys(event) {
+        if (source === 'instagram' || document.getElementsByTagName('video').length > 3) {
+            changeSpeedWithKeysVideoWall(event)
+        }
         if (event.keyCode === 187 || event.keyCode === 221) {
             if (video.playbackRate < 1.5) {
                 video.playbackRate = (video.playbackRate += 0.05).toFixed(2)
@@ -288,19 +336,48 @@ function main() {
         slider.value = video.playbackRate.toFixed(2)
     }
 
-    slider.addEventListener('mouseup', updateSpeed)
-    resetButton.addEventListener('click', resetSpeed)
-    if ((source === 'unknown' || source === 'shorts') && iframe) {
-        if (!!iframe.contentDocument && iframe.contentDocument.body.innerHTML.includes('video')) {
-            iframe.contentDocument.addEventListener('keydown', changeSpeedWithKeys)
-            iframe.contentDocument.addEventListener('mousemove', showAndHideSlider)
-            document.addEventListener('keydown', changeSpeedWithKeys)
-            document.addEventListener('keydown', showAndHideSlider)
-        }
+
+    function changeSpeedWithKeysVideoWall(event) {
+        let videos = querySelectorAllShadows('video')
+        videos.map(vid => {
+            video = vid
+            if (event.keyCode === 187 || event.keyCode === 221) {
+                if (video.playbackRate < 1.5) {
+                    video.playbackRate = (video.playbackRate += 0.05).toFixed(2)
+                } else if (video.playbackRate >= 1.5) {
+                    video.playbackRate = (video.playbackRate += 0.1).toFixed(1)
+                }
+            }
+            if ((event.keyCode === 189 || event.keyCode === 219) && video.playbackRate > 0.1) {
+                if (video.playbackRate <= 1.5) {
+                    video.playbackRate = (video.playbackRate -= 0.05).toFixed(2)
+                } else if (video.playbackRate > 1.5) {
+                    video.playbackRate = (video.playbackRate -= 0.1).toFixed(1)
+                }
+            }
+            if (event.keyCode === 8 || event.keyCode === 220) {
+                video.playbackRate = 1.0
+            }
+            updateSliderLabel(video.playbackRate.toFixed(2))
+            slider.value = video.playbackRate.toFixed(2)
+        })
     }
 
     var deleteEverythingButton = document.getElementById('deleteEverything')
     deleteEverythingButton.addEventListener('click', deleteEverything)
+
+    slider.addEventListener('mouseup', updateSpeed)
+    resetButton.addEventListener('click', resetSpeed)
+    if ((source === 'unknown' || source === 'shorts')) {
+        if (querySelectorAllShadows('video').length) {
+            if (iframe && iframe.contentDocument) {
+                iframe.contentDocument.addEventListener('keydown', changeSpeedWithKeys)
+                iframe.contentDocument.addEventListener('mousemove', showAndHideSlider)
+            }
+            document.addEventListener('keydown', changeSpeedWithKeys)
+            document.addEventListener('keydown', showAndHideSlider)
+        }
+    }
 
     if (document) {
         document.addEventListener('keydown', changeSpeedWithKeys)
@@ -332,17 +409,39 @@ function main() {
     }
 
     function checkScrollDirection(event) {
-        event.preventDefault()
-        if (checkScrollDirectionIsUp(event)) {
-            if ((Math.ceil(video.volume * 100) / 100) < .98) {
-                video.volume = (Math.round(video.volume * 100) / 100 + 0.02)
-            } else if ((Math.ceil(video.volume * 100) / 100) < 1) {
-                video.volume = (Math.round(video.volume * 100) / 100 + 0.01)
-            }
+        if (source === 'instagram') {
+            checkScrollDirectionVideoWall(event)
         } else {
-            if ((Math.floor(video.volume * 100) / 100) >= 0.02) video.volume = (Math.round(video.volume * 100) / 100 - 0.02)
+            event.preventDefault()
+            if (checkScrollDirectionIsUp(event)) {
+                if ((Math.ceil(video.volume * 100) / 100) < .98) {
+                    video.volume = (Math.round(video.volume * 100) / 100 + 0.02)
+                } else if ((Math.ceil(video.volume * 100) / 100) < 1) {
+                    video.volume = (Math.round(video.volume * 100) / 100 + 0.01)
+                }
+            } else {
+                if ((Math.floor(video.volume * 100) / 100) >= 0.02) video.volume = (Math.round(video.volume * 100) / 100 - 0.02)
+            }
+            // return false
         }
-        return false
+    }
+
+    function checkScrollDirectionVideoWall(event) {
+        event.preventDefault()
+        let videos = querySelectorAllShadows('video')
+        videos.map(vid => {
+            video = vid
+            if (checkScrollDirectionIsUp(event)) {
+                if ((Math.ceil(video.volume * 100) / 100) < .98) {
+                    video.volume = (Math.round(video.volume * 100) / 100 + 0.02)
+                } else if ((Math.ceil(video.volume * 100) / 100) < 1) {
+                    video.volume = (Math.round(video.volume * 100) / 100 + 0.01)
+                }
+            } else {
+                if ((Math.floor(video.volume * 100) / 100) >= 0.02) video.volume = (Math.round(video.volume * 100) / 100 - 0.02)
+            }
+        })
+        // return false
     }
 
     function checkScrollDirectionIsUp(event) {
@@ -354,6 +453,34 @@ function main() {
 
     var scrollVolume = false
     function toggleScrollVolume() {
+        if (!scrollVolumeToggle) {
+            scrollVolumeToggle = true
+            Toast.fire({
+                icon: 'warning',
+                title: 'Volume Scrolling Enabled'
+            })
+        } else {
+            scrollVolumeToggle = false
+            Toast.fire({
+                icon: 'success',
+                title: 'Volume Scrolling Disabled'
+            })
+        }
+        let classes = [
+            "swal2-container",
+            "swal2-top-start",
+            "swal2-backdrop-show",
+            "swal2-toast",
+            "swal2-popup",
+            "swal2-icon-warning", 
+            "swal2-show"
+        ]
+        classes.map(c => {
+            let clas = [...document.getElementsByClassName(c)]
+            clas.map(c => c.style.zIndex = 2147483645)
+        })
+
+
         if (!scrollVolume) {
             window.addEventListener('wheel', checkScrollDirection, { passive: false })
             scrollVolume = true
