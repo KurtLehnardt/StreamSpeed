@@ -16,7 +16,6 @@ MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
 var observer
 var changeSpeedWithKeysListener
-var count = 0
 onReady(main);
 
 // https://stackoverflow.com/a/71692555
