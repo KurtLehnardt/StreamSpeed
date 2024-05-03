@@ -1,18 +1,3 @@
-/*
-Fine tune the playback speed of popular streaming services, including Netflix, HBO Max, Amazon Prime Video, and YouTube, from 0.1x to 10x speed. Now includes support for aCloudGuru. Use the slider bar, or the plus/minus keys. Backspace to reset to 1x.
-
-Slow playback to 0.1x so you can see sleight of hand in magic tricks, or watch an action scene unfold in slow motion. Speed up an audiobook 3x or DIY video 10x so you can get through them more quickly. Binge watch an entire 10 hour season on 3.3x speed in 3 (I suggest turning captions on at higher speeds)
-
-Use + or - keys on your keyboard to change playback speed in increments of 0.1x, or slide the orange bar below the video to adjust speed with your mouse.
-Reset it to the default speed by pressing Backspace. UPDATE AUGUST 2023 the open bracket [ and closed bracket ] keys now also adjust video speed. + and - 
-interfere with the caption sizes on YouTube and some other sites. The backslash \ key resets the speed to 1.0x, because the backspace key sometimes causes
-a browser to go back a page.
-
-A new auto hide feature has been added so the slider bar doesn't interfere with full screen viewing. It appears when you move your mouse or press the +/- keys and 
-then disappears after a few seconds.
-*/
-
-
 function onReady(func) {
     if (document.readyState === 'complete') {
         setTimeout(func, 300)
@@ -30,7 +15,7 @@ function onReady(func) {
 MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 
 var observer
-
+var changeSpeedWithKeysListener
 onReady(main);
 
 // https://stackoverflow.com/a/71692555
@@ -122,16 +107,15 @@ function main() {
             let v = querySelectorAllShadows('video')
             let y = [...document.getElementsByTagName('video')]
             video = v.length > y.length ? v[0] : y[0]
-            console.log('video', video)
         } catch (error) {
             console.log('Could not find a video element:', error)
         }
     }
 
     function createSlider() {
-        var br = document.createElement('br')
+        let br = document.createElement('br')
 
-        var div = document.createElement('div')
+        let div = document.createElement('div')
         div.id = 'sliderContainer'
         if (source === 'youtube') {
             div.style.cssText = 'position: relative; margin: 0 auto 3rem;'
@@ -154,8 +138,8 @@ function main() {
         }
         div.style.cssText += 'transition: all 450ms ease'
 
-        var sliderLabel = document.createElement('output')
-        var siteColor
+        let sliderLabel = document.createElement('output')
+        let siteColor
         switch (source) {
             case 'youtube':
                 siteColor = 'rgb(255,0,0)'
@@ -171,30 +155,25 @@ function main() {
                 break;
             default:
                 siteColor = 'rgb(221, 149, 15)'
-
-
-            console.log('site color', siteColor)
-            console.log('source ', source)
-
         }
         sliderLabel.id = 'sliderLabel'
         sliderLabel.innerText = '1'
         sliderLabel.style.cssText = `position: absolute; background-color: ${siteColor}; color: white; font-size: 1.5em; text-align: center; padding: 3px 8px; top: 105%;`
 
-        var resetButton = document.createElement('button')
+        let resetButton = document.createElement('button')
         resetButton.id = 'resetButton'
         resetButton.innerText = 'Reset'
         resetButton.style.cssText = `float: right; color: white; background: none; font-size: 1.5em; text-align: center; border: 1px solid ${siteColor}; border-radius: 1px; margin-bottom: 3px;`
 
-        var deleteEverythingButton = document.createElement('button')
+        let deleteEverythingButton = document.createElement('button')
         deleteEverythingButton.id = 'deleteEverything'
         deleteEverythingButton.innerText = 'X'
         deleteEverythingButton.title = "Close Stream Speed"
         deleteEverythingButton.style.cssText = `float: none; margin-left: 40%; color: white; background: red; font-size: 1.1em; text-align: center; border: 2px solid red; border-radius: 50%; opacity: 0.7`
 
 
-        var toggleScrollVolumeButton = document.createElement('button')
-        var showVolumeButton = navigator.languages.some(el => el === 'ru-RU') ? 'none' : 'inherit'
+        let toggleScrollVolumeButton = document.createElement('button')
+        let showVolumeButton = navigator.languages.some(el => el === 'ru-RU') ? 'none' : 'inherit'
         toggleScrollVolumeButton.id = 'toggleScrollVolumeButton'
         toggleScrollVolumeButton.innerText = 'Volume Scroll'
         toggleScrollVolumeButton.style.cssText = `display: ${showVolumeButton}; float: left; color: white; background: none; font-size: 1.5em; text-align: center; border: 1px solid ${siteColor}; border-radius: 1px; margin-bottom: 3px;`
@@ -230,21 +209,35 @@ function main() {
     slider = document.getElementById('speedSlider')
 
     function deleteEverything() {
-        observer.disconnect()
+        if (observer) observer.disconnect()
         source = ''
-        // document.getElementById('sliderContainer').style.display = 'none'
         if (document.getElementById('sliderContainer')) document.getElementById('sliderContainer').remove()
         if (video) {
             resetSpeed()
             video.volume = 1
+            if (iframe.contentDocument) {
+                iframe.contentDocument.removeEventListener('wheel', checkScrollDirection, { passive: false })
+                iframe.contentDocument.removeEventListener('click', toggleScrollVolume, { passive: false })
+                iframe.contentDocument.removeEventListener('click', resetSpeed, { passive: false })
+                iframe.contentDocument.removeEventListener('mouseup', updateSpeed, { passive: false })
+                iframe.contentDocument.removeEventListener('mousemove', showAndHideSlider, { passive: false })
+                iframe.contentDocument.removeEventListener('keydown', changeSpeedWithKeys, { passive: false })
+                iframe.contentDocument.removeEventListener('click', deleteEverything, { passive: false })
+            }
             window.removeEventListener('wheel', checkScrollDirection, { passive: false })
+            window.removeEventListener('click', toggleScrollVolume, { passive: false })
+            window.removeEventListener('click', resetSpeed, { passive: false })
+            window.removeEventListener('mouseup', updateSpeed, { passive: false })
+            window.removeEventListener('mousemove', showAndHideSlider, { passive: false })
+            window.removeEventListener('keydown', changeSpeedWithKeys, { passive: false })
+            window.removeEventListener('click', deleteEverything, { passive: false })
         }
     }
 
-    var resetButton = document.getElementById('resetButton')
+    let resetButton = document.getElementById('resetButton')
 
     function updateSpeed() {
-        if (source === 'instagram' || source === 'unknown') {
+        if (source === 'instagram' || source === 'unknown' || document.getElementsByTagName('video').length > 2) {
             let videos = querySelectorAllShadows('video')
             videos.map(vid => {
                 video = vid
@@ -277,23 +270,23 @@ function main() {
         if (!slider) {
             createSlider()
         }
-        var sliderLabel = document.getElementById('sliderLabel')
+        let sliderLabel = document.getElementById('sliderLabel')
         if (!sliderLabel) return
         if (source !== 'youtube') {
             showAndHideSlider()
         }
-        var currentSpeed = speed.toString()
+        let currentSpeed = speed.toString()
         if (currentSpeed.length === 1) {
             currentSpeed = currentSpeed + '.0'
         }
-        var sliderVal = speed * 10 / 16
+        let sliderVal = speed * 10 / 16
         sliderLabel.innerText = currentSpeed
         sliderLabel.style.left = 'calc(' + sliderVal * 9.6 + '% + (' + (8 - sliderVal * 0.28) + 'px))'
     }
 
-    var fadingOut = false
+    let fadingOut = false
     function showAndHideSlider() {
-        var sliderContainer = document.getElementById('sliderContainer')
+        let sliderContainer = document.getElementById('sliderContainer')
         // TODO fix this ease in/out
         // look into using https://developer.chrome.com/docs/extensions/reference/tabs/#method-insertCSS
         // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/insertCSS
@@ -312,28 +305,30 @@ function main() {
     }
 
     function changeSpeedWithKeys(event) {
-        if (source === 'instagram' || document.getElementsByTagName('video').length > 3) {
+        if (source === 'instagram' || document.getElementsByTagName('video').length > 2) {
             changeSpeedWithKeysVideoWall(event)
-        }
-        if (event.keyCode === 187 || event.keyCode === 221) {
-            if (video.playbackRate < 1.5) {
-                video.playbackRate = (video.playbackRate += 0.05).toFixed(2)
-            } else if (video.playbackRate >= 1.5) {
-                video.playbackRate = (video.playbackRate += 0.1).toFixed(1)
+        } else {
+            if (event.keyCode === 187 || event.keyCode === 221) {
+                if (video.playbackRate < 1.5) {
+                    video.playbackRate = (video.playbackRate += 0.05).toFixed(2)
+                } else if (video.playbackRate >= 1.5) {
+                    video.playbackRate = (video.playbackRate += 0.1).toFixed(1)
+                }
             }
-        }
-        if ((event.keyCode === 189 || event.keyCode === 219) && video.playbackRate > 0.1) {
-            if (video.playbackRate <= 1.5) {
-                video.playbackRate = (video.playbackRate -= 0.05).toFixed(2)
-            } else if (video.playbackRate > 1.5) {
-                video.playbackRate = (video.playbackRate -= 0.1).toFixed(1)
+            if ((event.keyCode === 189 || event.keyCode === 219) && video.playbackRate > 0.1) {
+                if (video.playbackRate <= 1.5) {
+                    video.playbackRate = (video.playbackRate -= 0.05).toFixed(2)
+                } else if (video.playbackRate > 1.5) {
+                    video.playbackRate = (video.playbackRate -= 0.1).toFixed(1)
+                }
             }
+            if (event.keyCode === 8 || event.keyCode === 220) {
+                video.playbackRate = 1.0
+            }
+            slider = document.getElementById('speedSlider')
+            updateSliderLabel(video.playbackRate.toFixed(2))
+            slider.value = video.playbackRate.toFixed(2)
         }
-        if (event.keyCode === 8 || event.keyCode === 220) {
-            video.playbackRate = 1.0
-        }
-        updateSliderLabel(video.playbackRate.toFixed(2))
-        slider.value = video.playbackRate.toFixed(2)
     }
 
 
@@ -363,23 +358,30 @@ function main() {
         })
     }
 
-    var deleteEverythingButton = document.getElementById('deleteEverything')
+    let deleteEverythingButton = document.getElementById('deleteEverything')
     deleteEverythingButton.addEventListener('click', deleteEverything)
 
     slider.addEventListener('mouseup', updateSpeed)
     resetButton.addEventListener('click', resetSpeed)
+
     if ((source === 'unknown' || source === 'shorts')) {
         if (querySelectorAllShadows('video').length) {
             if (iframe && iframe.contentDocument) {
-                iframe.contentDocument.addEventListener('keydown', changeSpeedWithKeys)
+                if (!changeSpeedWithKeysListener) {
+                    iframe.contentDocument.addEventListener('keydown', changeSpeedWithKeys)
+                    changeSpeedWithKeysListener = true
+                }
                 iframe.contentDocument.addEventListener('mousemove', showAndHideSlider)
+            } else {
+                if (!changeSpeedWithKeysListener) {
+                    document.addEventListener('keydown', changeSpeedWithKeys)
+                    changeSpeedWithKeysListener = true
+                }
+                document.addEventListener('keydown', showAndHideSlider)
             }
-            document.addEventListener('keydown', changeSpeedWithKeys)
-            document.addEventListener('keydown', showAndHideSlider)
         }
-    }
-
-    if (document) {
+    } else if (document && !changeSpeedWithKeysListener) {
+        changeSpeedWithKeysListener = true
         document.addEventListener('keydown', changeSpeedWithKeys)
     }
     if (source !== 'youtube') {
@@ -387,29 +389,29 @@ function main() {
     }
     updateSliderLabel(1)
     if (source === 'hbo') {
-        var elements = [...document.getElementsByTagName("*")]
-        for (var i in elements) {
+        let elements = [...document.getElementsByTagName("*")]
+        for (let i in elements) {
             elements[i].style.cursor = 'none'
         }
         document.addEventListener('mousemove', () => {
-            for (var j in elements) {
+            for (let j in elements) {
                 elements[j].style.cursor = 'auto'
             }
             setTimeout(() => {
-                for (var k in elements) {
+                for (let k in elements) {
                     elements[k].style.cursor = 'none'
                 }
             }, 3000)
         })
     }
     if (source === 'acloudguru') {
-        var resetButton = document.getElementById('resetButton')
+        let resetButton = document.getElementById('resetButton')
         resetButton.style.right = '10vw'
         resetButton.style.position = 'absolute'
     }
 
     function checkScrollDirection(event) {
-        if (source === 'instagram') {
+        if (source === 'instagram' || document.getElementsByTagName('video').length > 2) {
             checkScrollDirectionVideoWall(event)
         } else {
             event.preventDefault()
@@ -451,7 +453,7 @@ function main() {
         return event.deltaY < 0;
     }
 
-    var scrollVolume = false
+    let scrollVolume = false
     function toggleScrollVolume() {
         if (!scrollVolumeToggle) {
             scrollVolumeToggle = true
@@ -472,7 +474,7 @@ function main() {
             "swal2-backdrop-show",
             "swal2-toast",
             "swal2-popup",
-            "swal2-icon-warning", 
+            "swal2-icon-warning",
             "swal2-show"
         ]
         classes.map(c => {
@@ -489,7 +491,7 @@ function main() {
             scrollVolume = false
         }
     }
-    var scrollVolumeButton = document.getElementById('toggleScrollVolumeButton')
+    let scrollVolumeButton = document.getElementById('toggleScrollVolumeButton')
     scrollVolumeButton.addEventListener('click', toggleScrollVolume)
 
 }
