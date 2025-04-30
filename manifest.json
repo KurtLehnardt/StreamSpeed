@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
 
-  "name": "Test",
+  "name": "StreamSpeed",
   "description": "Adjust playback speed and volume",
   "version": "4.1.0",
 
@@ -14,7 +14,7 @@
       "128": "images/play128.png"
    },
    "default_popup": "popup.html",
-   "default_title": "Test"
+   "default_title": "StreamSpeed"
   },
   "permissions": [
     "activeTab",

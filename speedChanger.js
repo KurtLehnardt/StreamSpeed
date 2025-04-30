@@ -97,7 +97,7 @@ function main() {
     });
 
     let slider = document.getElementById('speedSlider')
-    let videovi
+    let video
     let iframe = document.getElementsByTagName('iframe').length ? document.getElementsByTagName('iframe') : null
     if (source === 'amazon') {
         vid_elem = document.getElementsByTagName('video')
