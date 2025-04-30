@@ -98,6 +98,8 @@ function main() {
 
     let slider = document.getElementById('speedSlider')
     let video
+    let videosList = []
+    let videoIndex = 0
     let iframe = document.getElementsByTagName('iframe').length ? document.getElementsByTagName('iframe') : null
     if (source === 'amazon') {
         vid_elem = document.getElementsByTagName('video')
@@ -107,9 +109,16 @@ function main() {
             let v = querySelectorAllShadows('video')
             let y = [...document.getElementsByTagName('video')]
             video = v.length > y.length ? v[0] : y[0]
+            if ( !video.src ) video = findNextVideo() 
         } catch (error) {
             console.log('Could not find a video element:', error)
         }
+    }
+
+    function findNextVideo(){
+        videos = document.getElementsByTagName('video')
+        videos = videos.filter(v => v.src)
+        video = videos[videoIndex++]
     }
 
     function createSlider() {
@@ -171,6 +180,11 @@ function main() {
         deleteEverythingButton.title = "Close Stream Speed"
         deleteEverythingButton.style.cssText = `float: none; margin-left: 40%; color: white; background: red; font-size: 1.1em; text-align: center; border: 2px solid red; border-radius: 50%; opacity: 0.7`
 
+        let fixItButton = document.createElement('button')
+        fixItButton.id = 'deleteEverything'
+        fixItButton.innerText = 'Fix It'
+        fixItButton.title = "Fix It"
+        fixItButton.style.cssText = `float: none; margin-left: 30%; color: white; background: yellow; font-size: 1.1em; text-align: center; border: 2px solid yellow; border-radius: 50%; opacity: 0.7`
 
         let toggleScrollVolumeButton = document.createElement('button')
         let showVolumeButton = navigator.languages.some(el => el === 'ru-RU') ? 'none' : 'inherit'
@@ -194,6 +208,7 @@ function main() {
         div.prepend(br)
         div.appendChild(resetButton)
         div.appendChild(deleteEverythingButton)
+        div.appendChild(fixItButton)
         div.appendChild(toggleScrollVolumeButton)
         div.appendChild(sliderLabel)
         div.appendChild(br)
@@ -223,6 +238,7 @@ function main() {
                 iframe.contentDocument.removeEventListener('mousemove', showAndHideSlider, { passive: false })
                 iframe.contentDocument.removeEventListener('keydown', changeSpeedWithKeys, { passive: false })
                 iframe.contentDocument.removeEventListener('click', deleteEverything, { passive: false })
+                iframe.contentDocument.removeEventListener('click', findNextVideo, { passive: false })
             }
             window.removeEventListener('wheel', checkScrollDirection, { passive: false })
             window.removeEventListener('click', toggleScrollVolume, { passive: false })
@@ -231,6 +247,7 @@ function main() {
             window.removeEventListener('mousemove', showAndHideSlider, { passive: false })
             window.removeEventListener('keydown', changeSpeedWithKeys, { passive: false })
             window.removeEventListener('click', deleteEverything, { passive: false })
+            window.removeEventListener('click', findNextVideo, { passive: false })
         }
     }
 
@@ -360,6 +377,9 @@ function main() {
 
     let deleteEverythingButton = document.getElementById('deleteEverything')
     deleteEverythingButton.addEventListener('click', deleteEverything)
+
+    let fixItButton = document.getElementById('fixItButton')
+    fixItButton.addEventListener('click', findNextVideo)
 
     slider.addEventListener('mouseup', updateSpeed)
     resetButton.addEventListener('click', resetSpeed)
