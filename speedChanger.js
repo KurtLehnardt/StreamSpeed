@@ -107,6 +107,7 @@ function main() {
             let v = querySelectorAllShadows('video')
             let y = [...document.getElementsByTagName('video')]
             video = v.length > y.length ? v[0] : y[0]
+            if ( !video.src ) console.log(`no video.src found for ${video}, source: ${source}`)
         } catch (error) {
             console.log('Could not find a video element:', error)
         }
@@ -170,7 +171,6 @@ function main() {
         deleteEverythingButton.innerText = 'X'
         deleteEverythingButton.title = "Close Stream Speed"
         deleteEverythingButton.style.cssText = `float: none; margin-left: 40%; color: white; background: red; font-size: 1.1em; text-align: center; border: 2px solid red; border-radius: 50%; opacity: 0.7`
-
 
         let toggleScrollVolumeButton = document.createElement('button')
         let showVolumeButton = navigator.languages.some(el => el === 'ru-RU') ? 'none' : 'inherit'
@@ -237,7 +237,11 @@ function main() {
     let resetButton = document.getElementById('resetButton')
 
     function updateSpeed() {
-        if (source === 'instagram' || source === 'unknown' || document.getElementsByTagName('video').length > 2) {
+        // technically this could be if any video list length is greater than 1, to iterate over the list of videos
+        // but there may be a reason I chose 2 for some sites where it breaks if its less than 1. 
+        // should look into the most popular sites and see if everything works with a video arr len of just > 1
+        // so it iterates over every vidya on the page and doesn't break. This is the reason why disney plus was broken.
+        if (source === 'instagram' || source === 'unknown' || source === 'disney' || document.getElementsByTagName('video').length > 2) {
             let videos = querySelectorAllShadows('video')
             videos.map(vid => {
                 video = vid
