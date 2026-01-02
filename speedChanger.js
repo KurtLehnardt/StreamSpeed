@@ -59,7 +59,7 @@ function main() {
             container = document.getElementsByClassName('watch-video')[0]
         } else if (document.location.href.includes('amazon')) {
             source = 'amazon'
-            container = document.getElementsByClassName('webPlayerSDKContainer')[0]
+            container = document.getElementsByTagName('html')[0]
         } else if (document.location.href.includes('hbo')) {
             source = 'hbo'
             container = document.getElementsByClassName('default')[17]
@@ -77,6 +77,9 @@ function main() {
             container = [...document.getElementsByTagName('html')][0]
         } else {
             source = 'unknown'
+            container = [...document.getElementsByTagName('html')][0]
+        }
+        if (!container) {
             container = [...document.getElementsByTagName('html')][0]
         }
     }
@@ -125,7 +128,7 @@ function main() {
         } else if (source === 'disney') {
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999; width: 100%; top: 5vh;'
         } else if (source === 'amazon') {
-            div.style.cssText = 'position: fixed !important; margin: 50px auto 3rem; z-index: 9999; width: 100%; top: 8vh;'
+            div.style.cssText = 'position: fixed !important; margin: 50px auto 3rem; z-index: 99999; width: 100%; top: 8vh; height: 5vh;'
         } else if (source === 'hbo' || source === 'kanopy') {
             div.style.cssText = 'position: relative; margin: 0px auto 3rem; z-index: 9999;'
         } else if (source === 'acloudguru') {
