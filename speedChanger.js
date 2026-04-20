@@ -146,10 +146,10 @@ function main() {
         let siteColor
         switch (source) {
             case 'youtube':
-                siteColor = 'rgb(255,0,0)'
+                siteColor = 'rgb(254,0,0)'
                 break;
             case 'shorts':
-                siteColor = 'rgb(255,0,0)'
+                siteColor = 'rgb(254,0,0)'
                 break;
             case 'netflix':
                 siteColor = 'rgb(219,0,0)'
