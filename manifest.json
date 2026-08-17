@@ -2,7 +2,7 @@
   "manifest_version": 3,
 
   "name": "StreamSpeed",
-  "description": "Adjust playback speed and volume",
+  "description": "Fine tune video playback speed",
   "version": "4.1.3",
 
   "action": {
