@@ -30,6 +30,12 @@ function querySelectorAllShadows(selector, el = document.body) {
 }
 
 function main() {
+    if (window.__ssSliderActive) {
+        var __c = document.getElementById('sliderContainer');
+        if (__c) __c.style.opacity = '100%';
+        return;
+    }
+    window.__ssSliderActive = true;
     let container
     let source
     let scrollVolumeToggle = false
@@ -212,6 +218,7 @@ function main() {
     slider = document.getElementById('speedSlider')
 
     function deleteEverything() {
+        window.__ssSliderActive = false;
         if (observer) observer.disconnect()
         source = ''
         if (document.getElementById('sliderContainer')) document.getElementById('sliderContainer').remove()

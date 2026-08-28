@@ -1,0 +1,6 @@
+.DS_Store
+Archive.zip
+*.zip
+__MACOSX/
+.claude/worktrees/
+node_modules/
