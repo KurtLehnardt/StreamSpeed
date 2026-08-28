@@ -201,7 +201,7 @@
                 if (candidate) { lastCandidateChangeAt = Date.now(); }
                 evalSoon();
             });
-            observer.observe(document, { subtree: true, attributes: true, childList: true });
+            observer.observe(document, { subtree: true, attributes: true, childList: true, attributeFilter: ['class', 'id', 'aria-hidden', 'data-a-target'] });
         } catch (e) {}
 
         schedulePoll();
@@ -232,6 +232,8 @@
     try {
         if (chrome && chrome.runtime && chrome.runtime.onMessage) {
             chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+                // Defense-in-depth: only trust messages from our own extension.
+                if (sender && sender.id !== chrome.runtime.id) { return; }
                 if (msg && msg.type === 'SS_AD_NETWORK_HINT') {
                     if (typeof g.ssIsEngageableFrame === 'function' && !g.ssIsEngageableFrame()) { return; }
                     if (msg.site && msg.site !== site.key) { return; }

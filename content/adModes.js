@@ -14,6 +14,7 @@
 
     // ---- Module state ----------------------------------------------------
     var __ssSnap = null;        // snapshot of the video before we touched it
+    var __ssSnapEl = null;      // the exact <video> we snapshotted (restore target)
     var __ssMode = null;        // effective mode actually applied
     var __ssReason = null;      // last diagnostic reason code
     var __ssIntervals = [];     // all setInterval ids we own
@@ -198,6 +199,8 @@
         }
 
         __ssSnap = g.ssSnapshotPlayer(v);
+        __ssSnapEl = v;          // remember the element so we restore onto IT, not
+                                 // whatever video happens to be largest at disengage.
         __ssReason = null;
         var caps = site.capabilities || {};
         var mode = settings.adMode;
@@ -210,10 +213,14 @@
                 var failCount = 0;
                 var startedAt = Date.now();
                 var speedIv = trackInterval(setInterval(function () {
+                    // Stop fighting the rate once we've disengaged (the falling-edge
+                    // disengage is debounced, so this can fire on content video).
+                    if (!g.__ssAdEngaged) { return; }
                     var vv = g.ssGetActiveVideo() || v;
-                    // Re-assert the rate every tick (players love to reset it).
-                    try { vv.playbackRate = target; } catch (e) {}
-                    // E1 self-check begins after 400ms of settle time.
+                    // E1 self-check begins after 400ms of settle time. Read what the
+                    // player left from the PREVIOUS tick BEFORE we re-assert — reading
+                    // right after writing always returns target, so the check must
+                    // come first.
                     if (Date.now() - startedAt >= 400) {
                         var actual = vv.playbackRate;
                         if (Math.abs(actual - target) > target * 0.25) {
@@ -223,9 +230,14 @@
                                 logReason();
                                 clearTracked(speedIv);
                                 applyBreathing(vv); // fall back to mute + overlay
+                                return;
                             }
+                        } else {
+                            failCount = 0;
                         }
                     }
+                    // Re-assert the rate every tick (players love to reset it).
+                    try { vv.playbackRate = target; } catch (e) {}
                 }, 250));
             } else {
                 // e.g. Twitch SSAI: speed can't apply. Mute only, no overlay.
@@ -279,13 +291,15 @@
         __ssOverlay = null;
         __ssChip = null;
 
-        // Restore playback state.
+        // Restore playback state onto the element we actually snapshotted, so long
+        // as it is still in the DOM; otherwise fall back to the current largest video.
         if (__ssSnap) {
-            var v = g.ssGetActiveVideo();
+            var v = (__ssSnapEl && __ssSnapEl.isConnected) ? __ssSnapEl : g.ssGetActiveVideo();
             if (v) { try { g.ssRestorePlayer(v, __ssSnap); } catch (e) {} }
         }
 
         __ssSnap = null;
+        __ssSnapEl = null;
         __ssMode = null;
         __ssReason = null;
         g.__ssAdEngaged = false;

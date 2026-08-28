@@ -87,7 +87,9 @@ async function initControls() {
             if (tabId == null) return;
             try {
                 await chrome.scripting.executeScript({
-                    target: { tabId },
+                    // all_frames: the engaged video may live in a subframe (Hulu/
+                    // Peacock). Each frame's ssDisengage is a no-op if undefined.
+                    target: { tabId, allFrames: true },
                     func: () => { if (window.ssDisengage) window.ssDisengage(); }
                 });
             } catch (e) {
