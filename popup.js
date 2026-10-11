@@ -22,6 +22,7 @@ async function injectScript() {
     } catch (e) {
         // chrome://, extension pages, or no active tab — slider just won't inject.
         console.warn('StreamSpeed: slider injection skipped:', e);
+        if (!SS_AD_MODES_ENABLED) window.close();
     }
 }
 
@@ -116,6 +117,6 @@ async function initControls() {
 injectScript();
 // Feature flag (content/settings.js): ad-aware quick controls stay hidden while off.
 if (SS_AD_MODES_ENABLED) {
-    document.getElementById('ssAdUi').hidden = false;
+    document.documentElement.style.display = '';
     initControls();
 }

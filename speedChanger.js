@@ -32,8 +32,12 @@ function querySelectorAllShadows(selector, el = document.body) {
 function main() {
     if (window.__ssSliderActive) {
         var __c = document.getElementById('sliderContainer');
-        if (__c) __c.style.opacity = '100%';
-        return;
+        if (__c) {
+            __c.style.opacity = '100%';
+            return;
+        }
+        // The page removed our slider; fall through and rebuild it.
+        window.__ssSliderActive = false;
     }
     window.__ssSliderActive = true;
     let container
