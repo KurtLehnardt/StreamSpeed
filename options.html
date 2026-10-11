@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StreamSpeed — Settings</title>
     <style>
+        [hidden] { display: none !important; }
         :root {
             color-scheme: light dark;
         }
@@ -146,7 +147,7 @@
     </style>
 </head>
 <body>
-    <main>
+    <main id="ssMain" hidden>
         <h1>StreamSpeed Settings</h1>
         <p class="ss-sub">Control how StreamSpeed handles ads across supported streaming sites.</p>
 
@@ -260,6 +261,7 @@
             </div>
         </section>
     </main>
+    <p id="ssDisabledNote" hidden>Ad-aware features are not enabled in this build.</p>
 
     <script src="content/settings.js"></script>
     <script src="options.js"></script>

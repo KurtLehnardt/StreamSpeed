@@ -15,8 +15,10 @@ async function injectScript() {
             target: { tabId: tab.id },
             files: ['./speedChanger.js', './swal.js']
         });
-        // NOTE: intentionally NOT calling window.close() so the quick controls
-        // below stay usable while the slider is open on the page.
+        // With ad modes on, intentionally do NOT close the popup so the quick
+        // controls stay usable while the slider is open. With them off there is
+        // nothing else to show, so close as the classic popup did.
+        if (!SS_AD_MODES_ENABLED) window.close();
     } catch (e) {
         // chrome://, extension pages, or no active tab — slider just won't inject.
         console.warn('StreamSpeed: slider injection skipped:', e);
@@ -112,4 +114,8 @@ async function initControls() {
 
 // Kick off both concerns on load.
 injectScript();
-initControls();
+// Feature flag (content/settings.js): ad-aware quick controls stay hidden while off.
+if (SS_AD_MODES_ENABLED) {
+    document.getElementById('ssAdUi').hidden = false;
+    initControls();
+}

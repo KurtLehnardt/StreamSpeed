@@ -7,6 +7,9 @@
     'use strict';
     var g = self;
 
+    // Feature flag (content/settings.js): ad-aware features are gated off by default.
+    if (!g.SS_AD_MODES_ENABLED) { return; }
+
     if (g.__ssAdCoreInit) { return; }
     g.__ssAdCoreInit = true;
 

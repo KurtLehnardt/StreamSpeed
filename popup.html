@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StreamSpeed</title>
     <style>
+        [hidden] { display: none !important; }
         :root {
             color-scheme: light dark;
         }
@@ -105,6 +106,7 @@
     </style>
 </head>
 <body>
+    <div id="ssAdUi" hidden>
     <h1>StreamSpeed</h1>
 
     <div class="ss-row">
@@ -135,6 +137,7 @@
         Opening this popup activates the classic speed &amp; volume slider on the
         current tab. Quick controls above stay available while the slider is open.
     </p>
+    </div>
 
     <script src="content/settings.js"></script>
     <script src="popup.js"></script>
