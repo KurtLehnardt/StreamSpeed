@@ -19,6 +19,7 @@
   ],
   "icons": {
     "16": "images/play16.png",
+    "48": "images/play.png",
     "128": "images/play128.png"
   }
 }
