@@ -149,28 +149,64 @@
             try { nodes = g.ssQuerySelectorAllShadows(sels[i], document.documentElement); }
             catch (e) { nodes = []; }
             for (var j = 0; j < nodes.length; j++) {
-                if (clickIfActionable(nodes[j])) { return; }
+                if (clickIfActionable(nodes[j])) {
+                    try { console.info('[StreamSpeed] auto-skip: clicked', sels[i]); } catch (e) {}
+                    return true;
+                }
             }
         }
-        // Text fallback: only button-like elements whose text/aria mentions skip.
+        // Text fallback: button-like OR skip-classed elements whose text/aria says skip.
         var candidates;
-        try { candidates = g.ssQuerySelectorAllShadows('button,[role="button"]', document.documentElement); }
+        try { candidates = g.ssQuerySelectorAllShadows('button,[role="button"],[class*="skip" i]', document.documentElement); }
         catch (e) { candidates = []; }
         for (var k = 0; k < candidates.length; k++) {
             var el = candidates[k];
             if (!el) { continue; }
-            var txt = ((el.textContent || '') + ' ' + (el.getAttribute && el.getAttribute('aria-label') || '')).toLowerCase();
+            var txt = ((el.textContent || '') + ' ' + ((el.getAttribute && el.getAttribute('aria-label')) || '')).toLowerCase();
             if (txt.indexOf('skip') !== -1) {
-                if (clickIfActionable(el)) { return; }
+                if (clickIfActionable(el)) {
+                    try { console.info('[StreamSpeed] auto-skip: clicked (text match)'); } catch (e) {}
+                    return true;
+                }
             }
         }
+        return false;
+    }
+
+    // Public: attempt one skip scan. Driven by the detector loop so it also works
+    // while the skip button lingers after a fast-forwarded ad and regardless of mode.
+    g.ssTrySkip = function ssTrySkip(site) {
+        try { return scanAndSkip(site); } catch (e) { return false; }
+    };
+
+    // Some YouTube controls ignore a bare .click(); dispatch a full pointer/mouse
+    // sequence as well so the site's own handler actually fires.
+    function robustClick(el) {
+        var ok = false;
+        try { el.click(); ok = true; } catch (e) {}
+        try {
+            var opts = { bubbles: true, cancelable: true, view: window };
+            ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(function (type) {
+                var Ctor = (type.indexOf('pointer') === 0 && typeof PointerEvent === 'function') ? PointerEvent : MouseEvent;
+                try { el.dispatchEvent(new Ctor(type, opts)); ok = true; } catch (e) {}
+            });
+        } catch (e) {}
+        return ok;
     }
 
     function clickIfActionable(el) {
         if (!el) { return false; }
-        if (el.offsetParent === null) { return false; } // not visible
         if (el.disabled) { return false; }
-        try { el.click(); return true; } catch (e) { return false; }
+        // Visibility WITHOUT offsetParent: it is null for position:fixed elements
+        // (like YouTube's skip button) even when fully visible, which wrongly
+        // rejected them. Use client rects + computed style instead.
+        var rects = el.getClientRects();
+        if (!rects || rects.length === 0) { return false; }
+        try {
+            var cs = getComputedStyle(el);
+            if (cs && (cs.visibility === 'hidden' || cs.display === 'none' || cs.opacity === '0')) { return false; }
+        } catch (e) {}
+        return robustClick(el);
     }
 
     // Mute + breathing overlay (used directly and as the speed fallback).
@@ -202,6 +238,12 @@
         __ssSnapEl = v;          // remember the element so we restore onto IT, not
                                  // whatever video happens to be largest at disengage.
         __ssReason = null;
+
+        // Mute the ad the instant we engage, in EVERY mode (speed included). The
+        // pre-ad snapshot {muted,volume} is restored on disengage, so the content's
+        // audio comes back exactly as it was once the ad ends.
+        try { v.muted = true; } catch (e) {}
+
         var caps = site.capabilities || {};
         var mode = settings.adMode;
 
@@ -256,12 +298,9 @@
             }
         }
 
-        // Auto-skip runs independently of the chosen mode.
-        if (settings.autoSkip && caps.autoSkip) {
-            trackInterval(setInterval(function () {
-                try { scanAndSkip(site); } catch (e) {}
-            }, 400));
-        }
+        // Auto-skip is NOT started here anymore — it is driven by the detector loop
+        // (adDetector.js) so it also fires while the skip button lingers after a
+        // fast-forwarded ad, and even when no speed/breathing mode is engaged.
 
         // Always give the user an escape hatch.
         mountChip();
