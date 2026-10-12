@@ -37,6 +37,11 @@
         if (!SS_DEBUG) { return; }
         try { console.info.apply(console, ['[StreamSpeed]'].concat([].slice.call(arguments))); } catch (e) {}
     }
+    // Shared with adModes.js so all ad-code logging respects SS_DEBUG.
+    g.ssLog = ssLog;
+
+    var SKIP_GRACE_MS = 2500;      // keep trying to skip this long after the ad signal drops
+    var SKIP_DIAG_THROTTLE_MS = 2000; // min gap between "no skip button found" diagnostics
 
     // ---- Ad-active computation ------------------------------------------
     function anySelectorMatch() {
@@ -132,11 +137,17 @@
         // is confidently active — or for a short grace window after (so a skip button
         // that only appears once a fast-forwarded ad's real timer elapses still gets
         // clicked) — keep trying to click the site's own skip control.
+        // Skipped while the user has suppressed the ad via the escape chip (they
+        // asked for the ad to be left alone) and in frames that are not engageable.
+        var skipSuppressed = (typeof g.ssIsSuppressed === 'function') ? g.ssIsSuppressed() : false;
         if (SETTINGS.autoSkip && site.capabilities && site.capabilities.autoSkip &&
-            (gated || (now - lastGatedAt < 2500)) &&
+            (gated || (now - lastGatedAt < SKIP_GRACE_MS)) &&
+            !skipSuppressed &&
+            typeof g.ssIsEngageableFrame === 'function' && g.ssIsEngageableFrame() &&
             typeof g.ssTrySkip === 'function') {
-            if (g.ssTrySkip(site)) { ssLog('auto-skip: clicked skip button'); }
-            else if (now - lastSkipDiagAt > 2000) {
+            var skipped = g.ssTrySkip(site);
+            if (skipped) { ssLog('auto-skip: clicked skip button via', skipped); }
+            else if (now - lastSkipDiagAt > SKIP_DIAG_THROTTLE_MS) {
                 lastSkipDiagAt = now;
                 ssLog('auto-skip: ad active, no clickable skip button found this pass');
             }

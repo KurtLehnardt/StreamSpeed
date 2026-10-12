@@ -33,7 +33,7 @@
 
     function logReason() {
         if (__ssReason) {
-            try { console.debug('[StreamSpeed] reason=%s', __ssReason); } catch (e) {}
+            if (typeof g.ssLog === 'function') { g.ssLog('reason=' + __ssReason); }
         }
     }
 
@@ -140,63 +140,133 @@
         }
     }
 
-    // Auto-skip: scan skipSelectors (+ a conservative text fallback) for a visible,
-    // enabled control and click it.
+    var SKIP_THROTTLE_MS = 300;        // min gap between skip scans
+    var SKIP_CLICK_COOLDOWN_MS = 1000; // min gap between clicks on the same element
+    var SKIP_TEXT_MAX_LEN = 30;        // text fallback only trusts short labels
+    var SKIP_TEXT_RE = /^skip( ad| ads)?\b/i;
+    var lastSkipScanAt = 0;
+    var lastSkipClickAt = new WeakMap(); // element -> timestamp of last click
+
+    function log() {
+        if (typeof g.ssLog === 'function') { g.ssLog.apply(null, arguments); }
+    }
+
+    // Narrow the search to the player instead of the whole document: the closest
+    // known player container above the main video, else a few ancestors up.
+    function getPlayerRoot() {
+        var v = null;
+        try { v = g.ssGetActiveVideo(); } catch (e) {}
+        if (!v) { return null; }
+        try {
+            var known = v.closest('#movie_player, .html5-video-player, [data-a-target="video-player"], .video-player, [class*="player" i]');
+            if (known) { return known; }
+        } catch (e) {}
+        var el = v.parentElement;
+        for (var i = 0; i < 3 && el && el.parentElement && el.parentElement !== document.body; i++) {
+            el = el.parentElement;
+        }
+        return el || v.parentElement;
+    }
+
+    function isExcluded(el) {
+        try {
+            if (el.matches && el.matches('a[href]')) { return true; }
+            if (el.closest && el.closest('#masthead, nav, header, a[href]')) { return true; }
+        } catch (e) {}
+        return false;
+    }
+
+    function textLooksLikeSkip(el) {
+        var label = (el.getAttribute && el.getAttribute('aria-label')) || '';
+        if (SKIP_TEXT_RE.test(label.trim())) { return true; }
+        var txt = (el.textContent || '').trim();
+        return txt.length > 0 && txt.length <= SKIP_TEXT_MAX_LEN && SKIP_TEXT_RE.test(txt);
+    }
+
+    // Auto-skip: scan skipSelectors (+ a conservative text fallback) inside the
+    // player for a visible, enabled control and click it. Returns the matched
+    // selector string, 'text' for the fallback, or false.
     function scanAndSkip(site) {
+        var now = Date.now();
+        if (now - lastSkipScanAt < SKIP_THROTTLE_MS) { return false; }
+        lastSkipScanAt = now;
+
+        var root = getPlayerRoot();
+        if (!root) { return false; }
+
         var sels = site.skipSelectors || [];
-        for (var i = 0; i < sels.length; i++) {
+        if (sels.length) {
             var nodes;
-            try { nodes = g.ssQuerySelectorAllShadows(sels[i], document.documentElement); }
+            try { nodes = g.ssQuerySelectorAllShadows(sels.join(','), root); }
             catch (e) { nodes = []; }
             for (var j = 0; j < nodes.length; j++) {
                 if (clickIfActionable(nodes[j])) {
-                    try { console.info('[StreamSpeed] auto-skip: clicked', sels[i]); } catch (e) {}
-                    return true;
+                    var matched = sels.join(',');
+                    for (var i = 0; i < sels.length; i++) {
+                        try { if (nodes[j].matches(sels[i])) { matched = sels[i]; break; } } catch (e) {}
+                    }
+                    return matched;
                 }
             }
         }
-        // Text fallback: button-like OR skip-classed elements whose text/aria says skip.
+        // Text fallback: button-like OR skip-classed elements labelled "Skip".
         var candidates;
-        try { candidates = g.ssQuerySelectorAllShadows('button,[role="button"],[class*="skip" i]', document.documentElement); }
+        try { candidates = g.ssQuerySelectorAllShadows('button,[role="button"],[class*="skip" i]', root); }
         catch (e) { candidates = []; }
         for (var k = 0; k < candidates.length; k++) {
             var el = candidates[k];
-            if (!el) { continue; }
-            var txt = ((el.textContent || '') + ' ' + ((el.getAttribute && el.getAttribute('aria-label')) || '')).toLowerCase();
-            if (txt.indexOf('skip') !== -1) {
-                if (clickIfActionable(el)) {
-                    try { console.info('[StreamSpeed] auto-skip: clicked (text match)'); } catch (e) {}
-                    return true;
-                }
-            }
+            if (!el || isExcluded(el) || !textLooksLikeSkip(el)) { continue; }
+            if (clickIfActionable(el)) { return 'text'; }
         }
         return false;
     }
 
     // Public: attempt one skip scan. Driven by the detector loop so it also works
     // while the skip button lingers after a fast-forwarded ad and regardless of mode.
+    // Returns the matched selector (or 'text') on click, falsy otherwise.
     g.ssTrySkip = function ssTrySkip(site) {
         try { return scanAndSkip(site); } catch (e) { return false; }
     };
 
-    // Some YouTube controls ignore a bare .click(); dispatch a full pointer/mouse
-    // sequence as well so the site's own handler actually fires.
+    // Some YouTube controls ignore a bare .click(); dispatch the pointer/mouse
+    // press sequence first, then exactly one activation via el.click().
     function robustClick(el) {
-        var ok = false;
-        try { el.click(); ok = true; } catch (e) {}
         try {
             var opts = { bubbles: true, cancelable: true, view: window };
-            ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(function (type) {
+            ['pointerdown', 'mousedown', 'pointerup', 'mouseup'].forEach(function (type) {
                 var Ctor = (type.indexOf('pointer') === 0 && typeof PointerEvent === 'function') ? PointerEvent : MouseEvent;
-                try { el.dispatchEvent(new Ctor(type, opts)); ok = true; } catch (e) {}
+                try { el.dispatchEvent(new Ctor(type, opts)); } catch (e) {}
             });
         } catch (e) {}
-        return ok;
+        try { el.click(); return true; } catch (e) {}
+        return false;
+    }
+
+    function isInViewport(el) {
+        var r = el.getBoundingClientRect();
+        var vw = window.innerWidth || document.documentElement.clientWidth;
+        var vh = window.innerHeight || document.documentElement.clientHeight;
+        return r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < vw && r.top < vh;
+    }
+
+    // Reject only when something clearly unrelated covers the element's center.
+    // null / shadow-hosted results are inconclusive and do not reject.
+    function hitTestOk(el) {
+        try {
+            var r = el.getBoundingClientRect();
+            var top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            if (!top) { return true; }
+            if (top === el || el.contains(top)) { return true; }
+            if (top.shadowRoot || (el.getRootNode && el.getRootNode() !== document)) { return true; }
+            return false;
+        } catch (e) { return true; }
     }
 
     function clickIfActionable(el) {
         if (!el) { return false; }
         if (el.disabled) { return false; }
+        var last = lastSkipClickAt.get(el);
+        if (last && Date.now() - last < SKIP_CLICK_COOLDOWN_MS) { return false; }
         // Visibility WITHOUT offsetParent: it is null for position:fixed elements
         // (like YouTube's skip button) even when fully visible, which wrongly
         // rejected them. Use client rects + computed style instead.
@@ -206,7 +276,9 @@
             var cs = getComputedStyle(el);
             if (cs && (cs.visibility === 'hidden' || cs.display === 'none' || cs.opacity === '0')) { return false; }
         } catch (e) {}
-        return robustClick(el);
+        if (!isInViewport(el) || !hitTestOk(el)) { return false; }
+        if (robustClick(el)) { lastSkipClickAt.set(el, Date.now()); return true; }
+        return false;
     }
 
     // Mute + breathing overlay (used directly and as the speed fallback).
