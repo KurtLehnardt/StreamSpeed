@@ -16,6 +16,7 @@
 
     g.ssMaybeShowFirstRun = async function ssMaybeShowFirstRun() {
         try {
+            if (!g.SS_AD_MODES_ENABLED) { return; }
             // Top frame only.
             if (typeof g.ssIsTopFrame === 'function' && !g.ssIsTopFrame()) { return; }
             if (g.__ssFirstRunShown) { return; }

@@ -11,6 +11,15 @@
     'use strict';
     var g = self;
 
+    // ---- Feature flag ----------------------------------------------------
+    // Master switch for the ad-aware features (ad detection, breathing overlay,
+    // ad speed-through, ad auto-skip, the first-run banner, the network-hint
+    // observer, and the related popup/options UI). Defaults to OFF. Set to true
+    // to enable them AND merge the manifest entries saved in
+    // docs/ad-modes-manifest.md back into manifest.json (they were removed so
+    // the default build requests no new permissions).
+    g.SS_AD_MODES_ENABLED = false;
+
     // ---- Constants -------------------------------------------------------
     g.SS_SCHEMA_VERSION = 1;
 

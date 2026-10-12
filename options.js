@@ -223,6 +223,12 @@ function bind() {
 }
 
 async function init() {
+    // Feature flag (content/settings.js): ad-aware settings stay hidden while off.
+    if (!SS_AD_MODES_ENABLED) {
+        document.getElementById('ssDisabledNote').hidden = false;
+        return;
+    }
+    document.getElementById('ssMain').hidden = false;
     try {
         const s = await ssGetSettings();
         render(s);

@@ -18,6 +18,8 @@ importScripts('content/settings.js');
 // ssMigrate() is safe on empty storage: it returns the defaults, which we then
 // write back so subsequent reads have a fully-populated, versioned shape.
 chrome.runtime.onInstalled.addListener(async () => {
+  // Feature flag (content/settings.js): do not touch storage while off.
+  if (!SS_AD_MODES_ENABLED) return;
   const stored = await chrome.storage.sync.get(null);
   const migrated = ssMigrate(stored);
   await chrome.storage.sync.set(migrated);
@@ -53,6 +55,8 @@ function onAdRequest(details) {
 // state. Idempotent: only adds when it should run and isn't registered, only
 // removes when it shouldn't run but is registered.
 async function refreshObserver() {
+  // Feature flag (content/settings.js): never observe ad networks while off.
+  if (!SS_AD_MODES_ENABLED) return;
   const s = await ssGetSettings();
   const has = await chrome.permissions.contains({
     permissions: ['webRequest'],

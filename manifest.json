@@ -1,92 +1,25 @@
 {
   "manifest_version": 3,
-
   "name": "StreamSpeed",
   "description": "Adjust playback speed and volume",
-  "version": "4.2.0",
-
+  "version": "4.3.0",
   "action": {
-   "default_icon": {
+    "default_icon": {
       "16": "images/play16.png",
       "19": "images/play19.png",
       "38": "images/play38.png",
       "128": "images/play128.png"
-   },
-   "default_popup": "popup.html",
-   "default_title": "StreamSpeed"
+    },
+    "default_popup": "popup.html",
+    "default_title": "StreamSpeed"
   },
-
   "permissions": [
     "activeTab",
-    "scripting",
-    "storage"
+    "scripting"
   ],
-
-  "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://*.hulu.com/*",
-    "*://*.peacocktv.com/*",
-    "*://*.twitch.tv/*"
-  ],
-
-  "optional_permissions": [
-    "webRequest"
-  ],
-
-  "optional_host_permissions": [
-    "*://*.doubleclick.net/*",
-    "*://*.googlesyndication.com/*",
-    "*://imasdk.googleapis.com/*",
-    "*://*.moatads.com/*",
-    "*://*.adsafeprotected.com/*",
-    "*://*.fwmrm.net/*",
-    "*://*.amazon-adsystem.com/*"
-  ],
-
-  "background": {
-    "service_worker": "background.js"
-  },
-
-  "options_page": "options.html",
-
-  "content_scripts": [
-    {
-      "matches": [
-        "*://*.youtube.com/*",
-        "*://*.twitch.tv/*"
-      ],
-      "js": [
-        "content/settings.js",
-        "content/dom-utils.js",
-        "content/siteRegistry.js",
-        "content/firstRun.js",
-        "content/adModes.js",
-        "content/adDetector.js"
-      ],
-      "css": [
-        "content/breathing.css"
-      ],
-      "run_at": "document_idle",
-      "all_frames": false
-    },
-    {
-      "matches": [
-        "*://*.hulu.com/*",
-        "*://*.peacocktv.com/*"
-      ],
-      "js": [
-        "content/settings.js",
-        "content/dom-utils.js",
-        "content/siteRegistry.js",
-        "content/firstRun.js",
-        "content/adModes.js",
-        "content/adDetector.js"
-      ],
-      "css": [
-        "content/breathing.css"
-      ],
-      "run_at": "document_idle",
-      "all_frames": true
-    }
-  ]
+  "icons": {
+    "16": "images/play16.png",
+    "48": "images/play.png",
+    "128": "images/play128.png"
+  }
 }
