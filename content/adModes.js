@@ -147,10 +147,6 @@
     var lastAnyClickAt = 0;            // scan-wide click cooldown (also covers clicks bubbling to inner nodes)
     var lastSkipScanAt = 0;
 
-    function log() {
-        if (typeof g.ssLog === 'function') { g.ssLog.apply(null, arguments); }
-    }
-
     // Substring/prefix/suffix attribute operators (*=, ^=, $=) match loosely, so
     // those selectors need a label check; exact class/id/data-* selectors are trusted.
     function isWildcardSelector(sel) {
@@ -221,7 +217,8 @@
     function textLooksLikeSkip(el) {
         var label = (el.getAttribute && el.getAttribute('aria-label')) || '';
         label = label.trim();
-        if (label.length > 0 && label.length <= SKIP_TEXT_MAX_LEN && SKIP_TEXT_RE.test(label)) { return true; }
+        // A non-empty aria-label is the accessible name: trust it alone, never fall through.
+        if (label.length > 0) { return label.length <= SKIP_TEXT_MAX_LEN && SKIP_TEXT_RE.test(label); }
         var txt = (el.textContent || '').trim();
         return txt.length > 0 && txt.length <= SKIP_TEXT_MAX_LEN && SKIP_TEXT_RE.test(txt);
     }
