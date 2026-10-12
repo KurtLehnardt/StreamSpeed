@@ -133,26 +133,6 @@
         }
         if (gated) { lastGatedAt = now; }
 
-        // Auto-skip: independent of the chosen mode and of engagement. While an ad
-        // is confidently active — or for a short grace window after (so a skip button
-        // that only appears once a fast-forwarded ad's real timer elapses still gets
-        // clicked) — keep trying to click the site's own skip control.
-        // Skipped while the user has suppressed the ad via the escape chip (they
-        // asked for the ad to be left alone) and in frames that are not engageable.
-        var skipSuppressed = (typeof g.ssIsSuppressed === 'function') ? g.ssIsSuppressed() : false;
-        if (SETTINGS.autoSkip && site.capabilities && site.capabilities.autoSkip &&
-            (gated || (now - lastGatedAt < SKIP_GRACE_MS)) &&
-            !skipSuppressed &&
-            typeof g.ssIsEngageableFrame === 'function' && g.ssIsEngageableFrame() &&
-            typeof g.ssTrySkip === 'function') {
-            var skipped = g.ssTrySkip(site);
-            if (skipped) { ssLog('auto-skip: clicked skip button via', skipped); }
-            else if (skipped === false && now - lastSkipDiagAt > SKIP_DIAG_THROTTLE_MS) {
-                lastSkipDiagAt = now;
-                ssLog('auto-skip: ad active, no clickable skip button found this pass');
-            }
-        }
-
         // Rising edge of the gated state: fresh ad → clear any prior suppression,
         // and (E4) log a Beta selector miss if we inferred via text/hint only.
         if (gated && !wasGated) {
@@ -167,6 +147,28 @@
                 if ((textMatch || freshHint) && !selMatch) {
                     try { console.debug('[StreamSpeed] beta selector miss: site=%s', site.key); } catch (e) {}
                 }
+            }
+        }
+
+        // Auto-skip (placed after the rising-edge reset so stale suppression from a
+        // prior ad cannot block the first attempt): independent of the chosen mode and of engagement. While an ad
+        // is confidently active — or for a short grace window after (so a skip button
+        // that only appears once a fast-forwarded ad's real timer elapses still gets
+        // clicked) — keep trying to click the site's own skip control.
+        // Skipped while the user has suppressed the ad via the escape chip (they
+        // asked for the ad to be left alone) and in frames that are not engageable.
+        var skipSuppressed = (typeof g.ssIsSuppressed === 'function') ? g.ssIsSuppressed() : false;
+        if (SETTINGS.autoSkip && site.capabilities && site.capabilities.autoSkip &&
+            (gated || (now - lastGatedAt < SKIP_GRACE_MS)) &&
+            !skipSuppressed &&
+            typeof g.ssTrySkip === 'function' &&
+            (typeof g.ssSkipReady !== 'function' || g.ssSkipReady()) &&
+            typeof g.ssIsEngageableFrame === 'function' && g.ssIsEngageableFrame()) {
+            var skipped = g.ssTrySkip(site);
+            if (skipped) { ssLog('auto-skip: clicked skip button via', skipped); }
+            else if (skipped === false && now - lastSkipDiagAt > SKIP_DIAG_THROTTLE_MS) {
+                lastSkipDiagAt = now;
+                ssLog('auto-skip: ' + (gated ? 'ad active' : 'grace window') + ', no clickable skip button found this pass');
             }
         }
 

@@ -141,35 +141,73 @@
     }
 
     var SKIP_THROTTLE_MS = 300;        // min gap between skip scans
-    var SKIP_CLICK_COOLDOWN_MS = 1000; // min gap between clicks on the same element
+    var SKIP_CLICK_COOLDOWN_MS = 1000; // min gap between any two skip clicks
     var SKIP_TEXT_MAX_LEN = 30;        // text fallback only trusts short labels
     var SKIP_TEXT_RE = /^skip(\s+ads?)?\s*[▶►›»>]?\s*$/i; // rejects countdowns, intro/recap
-    var lastAnyClickAt = 0;            // scan-wide click cooldown (covers bubbling to inner nodes)
+    var lastAnyClickAt = 0;            // scan-wide click cooldown (also covers clicks bubbling to inner nodes)
     var lastSkipScanAt = 0;
-    var lastSkipClickAt = new WeakMap(); // element -> timestamp of last click
 
     function log() {
         if (typeof g.ssLog === 'function') { g.ssLog.apply(null, arguments); }
     }
 
+    // Substring/prefix/suffix attribute operators (*=, ^=, $=) match loosely, so
+    // those selectors need a label check; exact class/id/data-* selectors are trusted.
+    function isWildcardSelector(sel) {
+        return /\[[^\]]*[*^$]=/.test(sel);
+    }
+
+    // Query a list of selectors as one combined query; if it throws (one bad
+    // selector poisons the lot), fall back to one query per selector.
+    function queryGroup(list, root) {
+        if (!list.length) { return []; }
+        try { return g.ssQuerySelectorAllShadows(list.join(','), root); }
+        catch (e) {
+            var out = [];
+            for (var i = 0; i < list.length; i++) {
+                try { out = out.concat(g.ssQuerySelectorAllShadows(list[i], root)); } catch (e2) {}
+            }
+            return out;
+        }
+    }
+
+    // Public: true when a skip scan would actually run (outside the throttle and
+    // the post-click cooldown). Lets the detector avoid any DOM work on idle ticks.
+    g.ssSkipReady = function ssSkipReady() {
+        var now = Date.now();
+        return !(now - lastSkipScanAt < SKIP_THROTTLE_MS || now - lastAnyClickAt < SKIP_CLICK_COOLDOWN_MS);
+    };
+
     // Narrow the search to the player instead of the whole document: the closest
-    // known player container above the main video, else a few ancestors up.
-    function getPlayerRoot() {
+    // known player container above the main video. If that container holds no
+    // skip candidate, climb up to 2 more ancestors (never the whole document).
+    function getPlayerRoot(site) {
         var v = null;
         try { v = g.ssGetActiveVideo(); } catch (e) {}
         if (!v) { return null; }
-        var knownSels = ['#movie_player', '.html5-video-player', '[data-a-target="video-player"]', '.video-player', '[class*="player" i]'];
-        for (var q = 0; q < knownSels.length; q++) {
-            try {
-                var known = v.closest(knownSels[q]);
-                if (known) { return known; }
-            } catch (e) {}
+        var knownSels = ['#movie_player', '.html5-video-player', '[data-a-target="video-player"]', '.video-player', '[id*="player" i]', '[class*="player" i]'];
+        var root = null;
+        for (var q = 0; q < knownSels.length && !root; q++) {
+            try { root = v.closest(knownSels[q]); } catch (e) {}
         }
-        var el = v.parentElement;
-        for (var i = 0; i < 3 && el && el.parentElement && el.parentElement !== document.body; i++) {
-            el = el.parentElement;
+        if (!root) {
+            var el = v.parentElement;
+            for (var i = 0; i < 3 && el && el.parentElement && el.parentElement !== document.body; i++) {
+                el = el.parentElement;
+            }
+            root = el || v.parentElement;
         }
-        return el || v.parentElement;
+        if (!root) { return null; }
+        var probe = ((site && site.skipSelectors) || []).concat(['button', '[role="button"]']).join(',');
+        for (var up = 0; up < 2; up++) {
+            var has = false;
+            try { has = !!root.querySelector(probe); } catch (e) { has = true; }
+            if (has) { break; }
+            var parent = root.parentElement;
+            if (!parent || parent === document.body || parent === document.documentElement) { break; }
+            root = parent;
+        }
+        return root;
     }
 
     function isExcluded(el) {
@@ -198,25 +236,23 @@
         if (now - lastAnyClickAt < SKIP_CLICK_COOLDOWN_MS) { return null; }
         lastSkipScanAt = now;
 
-        var root = getPlayerRoot();
+        var root = getPlayerRoot(site);
         if (!root) { return false; }
 
         var sels = site.skipSelectors || [];
-        if (sels.length) {
-            var nodes;
-            try { nodes = g.ssQuerySelectorAllShadows(sels.join(','), root); }
-            catch (e) {
-                // One bad selector poisons the combined query; query each separately.
-                nodes = [];
-                for (var si = 0; si < sels.length; si++) {
-                    try { nodes = nodes.concat(g.ssQuerySelectorAllShadows(sels[si], root)); } catch (e2) {}
-                }
-            }
+        var trusted = [], wild = [];
+        for (var si = 0; si < sels.length; si++) {
+            (isWildcardSelector(sels[si]) ? wild : trusted).push(sels[si]);
+        }
+        var groups = [{ list: trusted, needText: false }, { list: wild, needText: true }];
+        for (var gi = 0; gi < groups.length; gi++) {
+            var nodes = queryGroup(groups[gi].list, root);
             for (var j = 0; j < nodes.length; j++) {
+                if (groups[gi].needText && !textLooksLikeSkip(nodes[j])) { continue; }
                 if (clickIfActionable(nodes[j])) {
-                    var matched = sels.join(',');
-                    for (var i = 0; i < sels.length; i++) {
-                        try { if (nodes[j].matches(sels[i])) { matched = sels[i]; break; } } catch (e) {}
+                    var matched = groups[gi].list.join(',');
+                    for (var i = 0; i < groups[gi].list.length; i++) {
+                        try { if (nodes[j].matches(groups[gi].list[i])) { matched = groups[gi].list[i]; break; } } catch (e) {}
                     }
                     return matched;
                 }
@@ -229,6 +265,8 @@
         for (var k = 0; k < candidates.length; k++) {
             var el = candidates[k];
             if (!el || isExcluded(el) || !textLooksLikeSkip(el)) { continue; }
+            // Prefer the innermost control: skip wrappers that contain a button.
+            try { if (el.querySelector('button,[role="button"]')) { continue; } } catch (e) {}
             if (clickIfActionable(el)) { return 'text'; }
         }
         return false;
@@ -236,7 +274,8 @@
 
     // Public: attempt one skip scan. Driven by the detector loop so it also works
     // while the skip button lingers after a fast-forwarded ad and regardless of mode.
-    // Returns the matched selector (or 'text') on click, falsy otherwise.
+    // Returns a string (matched selector, or 'text') after a click, false when a
+    // scan ran and found nothing, null when throttled or in click cooldown.
     g.ssTrySkip = function ssTrySkip(site) {
         try { return scanAndSkip(site); } catch (e) { return false; }
     };
@@ -278,8 +317,6 @@
     function clickIfActionable(el) {
         if (!el) { return false; }
         if (el.disabled) { return false; }
-        var last = lastSkipClickAt.get(el);
-        if (last && Date.now() - last < SKIP_CLICK_COOLDOWN_MS) { return false; }
         // Visibility WITHOUT offsetParent: it is null for position:fixed elements
         // (like YouTube's skip button) even when fully visible, which wrongly
         // rejected them. Use client rects + computed style instead.
@@ -290,7 +327,7 @@
             if (cs && (cs.visibility === 'hidden' || cs.display === 'none' || cs.opacity === '0')) { return false; }
         } catch (e) {}
         if (!isInViewport(el) || !hitTestOk(el)) { return false; }
-        if (robustClick(el)) { lastSkipClickAt.set(el, Date.now()); lastAnyClickAt = Date.now(); return true; }
+        if (robustClick(el)) { lastAnyClickAt = Date.now(); return true; }
         return false;
     }
 
