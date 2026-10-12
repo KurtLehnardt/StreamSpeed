@@ -143,7 +143,8 @@
     var SKIP_THROTTLE_MS = 300;        // min gap between skip scans
     var SKIP_CLICK_COOLDOWN_MS = 1000; // min gap between clicks on the same element
     var SKIP_TEXT_MAX_LEN = 30;        // text fallback only trusts short labels
-    var SKIP_TEXT_RE = /^skip( ad| ads)?\b/i;
+    var SKIP_TEXT_RE = /^skip(\s+ads?)?\s*[▶►›»>]?\s*$/i; // rejects countdowns, intro/recap
+    var lastAnyClickAt = 0;            // scan-wide click cooldown (covers bubbling to inner nodes)
     var lastSkipScanAt = 0;
     var lastSkipClickAt = new WeakMap(); // element -> timestamp of last click
 
@@ -157,10 +158,13 @@
         var v = null;
         try { v = g.ssGetActiveVideo(); } catch (e) {}
         if (!v) { return null; }
-        try {
-            var known = v.closest('#movie_player, .html5-video-player, [data-a-target="video-player"], .video-player, [class*="player" i]');
-            if (known) { return known; }
-        } catch (e) {}
+        var knownSels = ['#movie_player', '.html5-video-player', '[data-a-target="video-player"]', '.video-player', '[class*="player" i]'];
+        for (var q = 0; q < knownSels.length; q++) {
+            try {
+                var known = v.closest(knownSels[q]);
+                if (known) { return known; }
+            } catch (e) {}
+        }
         var el = v.parentElement;
         for (var i = 0; i < 3 && el && el.parentElement && el.parentElement !== document.body; i++) {
             el = el.parentElement;
@@ -178,17 +182,20 @@
 
     function textLooksLikeSkip(el) {
         var label = (el.getAttribute && el.getAttribute('aria-label')) || '';
-        if (SKIP_TEXT_RE.test(label.trim())) { return true; }
+        label = label.trim();
+        if (label.length > 0 && label.length <= SKIP_TEXT_MAX_LEN && SKIP_TEXT_RE.test(label)) { return true; }
         var txt = (el.textContent || '').trim();
         return txt.length > 0 && txt.length <= SKIP_TEXT_MAX_LEN && SKIP_TEXT_RE.test(txt);
     }
 
     // Auto-skip: scan skipSelectors (+ a conservative text fallback) inside the
     // player for a visible, enabled control and click it. Returns the matched
-    // selector string, 'text' for the fallback, or false.
+    // selector string or 'text' on click, false when scanned and nothing found,
+    // null when throttled or cooling down (no scan happened).
     function scanAndSkip(site) {
         var now = Date.now();
-        if (now - lastSkipScanAt < SKIP_THROTTLE_MS) { return false; }
+        if (now - lastSkipScanAt < SKIP_THROTTLE_MS) { return null; }
+        if (now - lastAnyClickAt < SKIP_CLICK_COOLDOWN_MS) { return null; }
         lastSkipScanAt = now;
 
         var root = getPlayerRoot();
@@ -198,7 +205,13 @@
         if (sels.length) {
             var nodes;
             try { nodes = g.ssQuerySelectorAllShadows(sels.join(','), root); }
-            catch (e) { nodes = []; }
+            catch (e) {
+                // One bad selector poisons the combined query; query each separately.
+                nodes = [];
+                for (var si = 0; si < sels.length; si++) {
+                    try { nodes = nodes.concat(g.ssQuerySelectorAllShadows(sels[si], root)); } catch (e2) {}
+                }
+            }
             for (var j = 0; j < nodes.length; j++) {
                 if (clickIfActionable(nodes[j])) {
                     var matched = sels.join(',');
@@ -277,7 +290,7 @@
             if (cs && (cs.visibility === 'hidden' || cs.display === 'none' || cs.opacity === '0')) { return false; }
         } catch (e) {}
         if (!isInViewport(el) || !hitTestOk(el)) { return false; }
-        if (robustClick(el)) { lastSkipClickAt.set(el, Date.now()); return true; }
+        if (robustClick(el)) { lastSkipClickAt.set(el, Date.now()); lastAnyClickAt = Date.now(); return true; }
         return false;
     }
 

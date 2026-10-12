@@ -147,7 +147,7 @@
             typeof g.ssTrySkip === 'function') {
             var skipped = g.ssTrySkip(site);
             if (skipped) { ssLog('auto-skip: clicked skip button via', skipped); }
-            else if (now - lastSkipDiagAt > SKIP_DIAG_THROTTLE_MS) {
+            else if (skipped === false && now - lastSkipDiagAt > SKIP_DIAG_THROTTLE_MS) {
                 lastSkipDiagAt = now;
                 ssLog('auto-skip: ad active, no clickable skip button found this pass');
             }
