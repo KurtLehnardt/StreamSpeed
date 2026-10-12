@@ -10,11 +10,12 @@
         youtube: {
             confidence: 'high',
             hostMatch: /(^|\.)youtube\.com$/,
+            // Only the classes YouTube actually TOGGLES on the player during an ad.
+            // (The .ytp-ad-player-overlay* elements linger in the DOM after the ad,
+            // which kept detection stuck "on" and the content video at 16x.)
             adActiveSelectors: [
                 '.ad-showing',
-                '.ad-interrupting',
-                '.ytp-ad-player-overlay',
-                '.ytp-ad-player-overlay-layout'
+                '.ad-interrupting'
             ],
             adActiveTextFallback: [],
             skipSelectors: [

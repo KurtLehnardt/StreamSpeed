@@ -33,7 +33,7 @@
 
     function logReason() {
         if (__ssReason) {
-            try { console.debug('[StreamSpeed] reason=%s', __ssReason); } catch (e) {}
+            if (typeof g.ssLog === 'function') { g.ssLog('reason=' + __ssReason); }
         }
     }
 
@@ -140,37 +140,192 @@
         }
     }
 
-    // Auto-skip: scan skipSelectors (+ a conservative text fallback) for a visible,
-    // enabled control and click it.
+    var SKIP_THROTTLE_MS = 300;        // min gap between skip scans
+    var SKIP_CLICK_COOLDOWN_MS = 1000; // min gap between any two skip clicks
+    var SKIP_TEXT_MAX_LEN = 30;        // text fallback only trusts short labels
+    var SKIP_TEXT_RE = /^skip(\s+ads?)?\s*[▶►›»>]?\s*$/i; // rejects countdowns, intro/recap
+    var lastAnyClickAt = 0;            // scan-wide click cooldown (also covers clicks bubbling to inner nodes)
+    var lastSkipScanAt = 0;
+
+    // Substring/prefix/suffix attribute operators (*=, ^=, $=) match loosely, so
+    // those selectors need a label check; exact class/id/data-* selectors are trusted.
+    function isWildcardSelector(sel) {
+        return /\[[^\]]*[*^$]=/.test(sel);
+    }
+
+    // Query a list of selectors as one combined query; if it throws (one bad
+    // selector poisons the lot), fall back to one query per selector.
+    function queryGroup(list, root) {
+        if (!list.length) { return []; }
+        try { return g.ssQuerySelectorAllShadows(list.join(','), root); }
+        catch (e) {
+            var out = [];
+            for (var i = 0; i < list.length; i++) {
+                try { out = out.concat(g.ssQuerySelectorAllShadows(list[i], root)); } catch (e2) {}
+            }
+            return out;
+        }
+    }
+
+    // Public: true when a skip scan would actually run (outside the throttle and
+    // the post-click cooldown). Lets the detector avoid any DOM work on idle ticks.
+    g.ssSkipReady = function ssSkipReady() {
+        var now = Date.now();
+        return !(now - lastSkipScanAt < SKIP_THROTTLE_MS || now - lastAnyClickAt < SKIP_CLICK_COOLDOWN_MS);
+    };
+
+    // Narrow the search to the player instead of the whole document: the closest
+    // known player container above the main video. If that container holds no
+    // skip candidate, climb up to 2 more ancestors (never the whole document).
+    function getPlayerRoot(site) {
+        var v = null;
+        try { v = g.ssGetActiveVideo(); } catch (e) {}
+        if (!v) { return null; }
+        var knownSels = ['#movie_player', '.html5-video-player', '[data-a-target="video-player"]', '.video-player', '[id*="player" i]', '[class*="player" i]'];
+        var root = null;
+        for (var q = 0; q < knownSels.length && !root; q++) {
+            try { root = v.closest(knownSels[q]); } catch (e) {}
+        }
+        if (!root) {
+            var el = v.parentElement;
+            for (var i = 0; i < 3 && el && el.parentElement && el.parentElement !== document.body; i++) {
+                el = el.parentElement;
+            }
+            root = el || v.parentElement;
+        }
+        if (!root) { return null; }
+        var probe = ((site && site.skipSelectors) || []).concat(['button', '[role="button"]']).join(',');
+        for (var up = 0; up < 2; up++) {
+            var has = false;
+            try { has = !!root.querySelector(probe); } catch (e) { has = true; }
+            if (has) { break; }
+            var parent = root.parentElement;
+            if (!parent || parent === document.body || parent === document.documentElement) { break; }
+            root = parent;
+        }
+        return root;
+    }
+
+    function isExcluded(el) {
+        try {
+            if (el.matches && el.matches('a[href]')) { return true; }
+            if (el.closest && el.closest('#masthead, nav, header, a[href]')) { return true; }
+        } catch (e) {}
+        return false;
+    }
+
+    function textLooksLikeSkip(el) {
+        var label = (el.getAttribute && el.getAttribute('aria-label')) || '';
+        label = label.trim();
+        // A non-empty aria-label is the accessible name: trust it alone, never fall through.
+        if (label.length > 0) { return label.length <= SKIP_TEXT_MAX_LEN && SKIP_TEXT_RE.test(label); }
+        var txt = (el.textContent || '').trim();
+        return txt.length > 0 && txt.length <= SKIP_TEXT_MAX_LEN && SKIP_TEXT_RE.test(txt);
+    }
+
+    // Auto-skip: scan skipSelectors (+ a conservative text fallback) inside the
+    // player for a visible, enabled control and click it. Returns the matched
+    // selector string or 'text' on click, false when scanned and nothing found,
+    // null when throttled or cooling down (no scan happened).
     function scanAndSkip(site) {
+        var now = Date.now();
+        if (now - lastSkipScanAt < SKIP_THROTTLE_MS) { return null; }
+        if (now - lastAnyClickAt < SKIP_CLICK_COOLDOWN_MS) { return null; }
+        lastSkipScanAt = now;
+
+        var root = getPlayerRoot(site);
+        if (!root) { return false; }
+
         var sels = site.skipSelectors || [];
-        for (var i = 0; i < sels.length; i++) {
-            var nodes;
-            try { nodes = g.ssQuerySelectorAllShadows(sels[i], document.documentElement); }
-            catch (e) { nodes = []; }
+        var trusted = [], wild = [];
+        for (var si = 0; si < sels.length; si++) {
+            (isWildcardSelector(sels[si]) ? wild : trusted).push(sels[si]);
+        }
+        var groups = [{ list: trusted, needText: false }, { list: wild, needText: true }];
+        for (var gi = 0; gi < groups.length; gi++) {
+            var nodes = queryGroup(groups[gi].list, root);
             for (var j = 0; j < nodes.length; j++) {
-                if (clickIfActionable(nodes[j])) { return; }
+                if (groups[gi].needText && !textLooksLikeSkip(nodes[j])) { continue; }
+                if (clickIfActionable(nodes[j])) {
+                    var matched = groups[gi].list.join(',');
+                    for (var i = 0; i < groups[gi].list.length; i++) {
+                        try { if (nodes[j].matches(groups[gi].list[i])) { matched = groups[gi].list[i]; break; } } catch (e) {}
+                    }
+                    return matched;
+                }
             }
         }
-        // Text fallback: only button-like elements whose text/aria mentions skip.
+        // Text fallback: button-like OR skip-classed elements labelled "Skip".
         var candidates;
-        try { candidates = g.ssQuerySelectorAllShadows('button,[role="button"]', document.documentElement); }
+        try { candidates = g.ssQuerySelectorAllShadows('button,[role="button"],[class*="skip" i]', root); }
         catch (e) { candidates = []; }
         for (var k = 0; k < candidates.length; k++) {
             var el = candidates[k];
-            if (!el) { continue; }
-            var txt = ((el.textContent || '') + ' ' + (el.getAttribute && el.getAttribute('aria-label') || '')).toLowerCase();
-            if (txt.indexOf('skip') !== -1) {
-                if (clickIfActionable(el)) { return; }
-            }
+            if (!el || isExcluded(el) || !textLooksLikeSkip(el)) { continue; }
+            // Prefer the innermost control: skip wrappers that contain a button.
+            try { if (el.querySelector('button,[role="button"]')) { continue; } } catch (e) {}
+            if (clickIfActionable(el)) { return 'text'; }
         }
+        return false;
+    }
+
+    // Public: attempt one skip scan. Driven by the detector loop so it also works
+    // while the skip button lingers after a fast-forwarded ad and regardless of mode.
+    // Returns a string (matched selector, or 'text') after a click, false when a
+    // scan ran and found nothing, null when throttled or in click cooldown.
+    g.ssTrySkip = function ssTrySkip(site) {
+        try { return scanAndSkip(site); } catch (e) { return false; }
+    };
+
+    // Some YouTube controls ignore a bare .click(); dispatch the pointer/mouse
+    // press sequence first, then exactly one activation via el.click().
+    function robustClick(el) {
+        try {
+            var opts = { bubbles: true, cancelable: true, view: window };
+            ['pointerdown', 'mousedown', 'pointerup', 'mouseup'].forEach(function (type) {
+                var Ctor = (type.indexOf('pointer') === 0 && typeof PointerEvent === 'function') ? PointerEvent : MouseEvent;
+                try { el.dispatchEvent(new Ctor(type, opts)); } catch (e) {}
+            });
+        } catch (e) {}
+        try { el.click(); return true; } catch (e) {}
+        return false;
+    }
+
+    function isInViewport(el) {
+        var r = el.getBoundingClientRect();
+        var vw = window.innerWidth || document.documentElement.clientWidth;
+        var vh = window.innerHeight || document.documentElement.clientHeight;
+        return r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < vw && r.top < vh;
+    }
+
+    // Reject only when something clearly unrelated covers the element's center.
+    // null / shadow-hosted results are inconclusive and do not reject.
+    function hitTestOk(el) {
+        try {
+            var r = el.getBoundingClientRect();
+            var top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            if (!top) { return true; }
+            if (top === el || el.contains(top)) { return true; }
+            if (top.shadowRoot || (el.getRootNode && el.getRootNode() !== document)) { return true; }
+            return false;
+        } catch (e) { return true; }
     }
 
     function clickIfActionable(el) {
         if (!el) { return false; }
-        if (el.offsetParent === null) { return false; } // not visible
         if (el.disabled) { return false; }
-        try { el.click(); return true; } catch (e) { return false; }
+        // Visibility WITHOUT offsetParent: it is null for position:fixed elements
+        // (like YouTube's skip button) even when fully visible, which wrongly
+        // rejected them. Use client rects + computed style instead.
+        var rects = el.getClientRects();
+        if (!rects || rects.length === 0) { return false; }
+        try {
+            var cs = getComputedStyle(el);
+            if (cs && (cs.visibility === 'hidden' || cs.display === 'none' || cs.opacity === '0')) { return false; }
+        } catch (e) {}
+        if (!isInViewport(el) || !hitTestOk(el)) { return false; }
+        if (robustClick(el)) { lastAnyClickAt = Date.now(); return true; }
+        return false;
     }
 
     // Mute + breathing overlay (used directly and as the speed fallback).
@@ -202,6 +357,12 @@
         __ssSnapEl = v;          // remember the element so we restore onto IT, not
                                  // whatever video happens to be largest at disengage.
         __ssReason = null;
+
+        // Mute the ad the instant we engage, in EVERY mode (speed included). The
+        // pre-ad snapshot {muted,volume} is restored on disengage, so the content's
+        // audio comes back exactly as it was once the ad ends.
+        try { v.muted = true; } catch (e) {}
+
         var caps = site.capabilities || {};
         var mode = settings.adMode;
 
@@ -256,12 +417,9 @@
             }
         }
 
-        // Auto-skip runs independently of the chosen mode.
-        if (settings.autoSkip && caps.autoSkip) {
-            trackInterval(setInterval(function () {
-                try { scanAndSkip(site); } catch (e) {}
-            }, 400));
-        }
+        // Auto-skip is NOT started here anymore — it is driven by the detector loop
+        // (adDetector.js) so it also fires while the skip button lingers after a
+        // fast-forwarded ad, and even when no speed/breathing mode is engaged.
 
         // Always give the user an escape hatch.
         mountChip();

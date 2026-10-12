@@ -22,11 +22,26 @@
     var wasGated = false;        // previous confidence-gated state (for rising edge)
     var firstSeenAt = 0;         // when domAdActive first went true (sustain timer)
     var lastHintAt = 0;          // last fresh SS_AD_NETWORK_HINT timestamp
+    var lastGatedAt = 0;         // last time an ad was confidently active (auto-skip grace)
+    var lastSkipDiagAt = 0;      // throttle for the "no skip button found" diagnostic
     var lastCandidateChangeAt = 0; // last ad-ish DOM mutation (adaptive poll)
     var lastEvalAt = 0;          // throttle for observer-driven evaluate()
     var fallingTimer = null;     // 600ms debounce before disengaging
     var pollTimer = null;
     var observer = null;
+
+    // Status logging so testing is visible in the page console. Filter the
+    // DevTools console by "StreamSpeed" to see only these. Set false to silence.
+    var SS_DEBUG = true;
+    function ssLog() {
+        if (!SS_DEBUG) { return; }
+        try { console.info.apply(console, ['[StreamSpeed]'].concat([].slice.call(arguments))); } catch (e) {}
+    }
+    // Shared with adModes.js so all ad-code logging respects SS_DEBUG.
+    g.ssLog = ssLog;
+
+    var SKIP_GRACE_MS = 2500;      // keep trying to skip this long after the ad signal drops
+    var SKIP_DIAG_THROTTLE_MS = 2000; // min gap between "no skip button found" diagnostics
 
     // ---- Ad-active computation ------------------------------------------
     function anySelectorMatch() {
@@ -116,10 +131,13 @@
                 gated = !!(sustained || freshHint);
             }
         }
+        if (gated) { lastGatedAt = now; }
 
         // Rising edge of the gated state: fresh ad → clear any prior suppression,
         // and (E4) log a Beta selector miss if we inferred via text/hint only.
         if (gated && !wasGated) {
+            ssLog('ad detected on', site.key, '· adMode:', SETTINGS.adMode,
+                  SETTINGS.adMode === 'off' ? '(OFF — choose Speed or Breathing in Options to act)' : '');
             if (typeof g.ssResetSuppression === 'function') { g.ssResetSuppression(); }
             if (site.confidence !== 'high') {
                 var selMatch = false;
@@ -132,6 +150,28 @@
             }
         }
 
+        // Auto-skip (placed after the rising-edge reset so stale suppression from a
+        // prior ad cannot block the first attempt): independent of the chosen mode and of engagement. While an ad
+        // is confidently active — or for a short grace window after (so a skip button
+        // that only appears once a fast-forwarded ad's real timer elapses still gets
+        // clicked) — keep trying to click the site's own skip control.
+        // Skipped while the user has suppressed the ad via the escape chip (they
+        // asked for the ad to be left alone) and in frames that are not engageable.
+        var skipSuppressed = (typeof g.ssIsSuppressed === 'function') ? g.ssIsSuppressed() : false;
+        if (SETTINGS.autoSkip && site.capabilities && site.capabilities.autoSkip &&
+            (gated || (now - lastGatedAt < SKIP_GRACE_MS)) &&
+            !skipSuppressed &&
+            typeof g.ssTrySkip === 'function' &&
+            (typeof g.ssSkipReady !== 'function' || g.ssSkipReady()) &&
+            typeof g.ssIsEngageableFrame === 'function' && g.ssIsEngageableFrame()) {
+            var skipped = g.ssTrySkip(site);
+            if (skipped) { ssLog('auto-skip: clicked skip button via', skipped); }
+            else if (skipped === false && now - lastSkipDiagAt > SKIP_DIAG_THROTTLE_MS) {
+                lastSkipDiagAt = now;
+                ssLog('auto-skip: ' + (gated ? 'ad active' : 'grace window') + ', no clickable skip button found this pass');
+            }
+        }
+
         // Engage while gated (re-checked each tick so we retry once the frame
         // becomes engageable). Respect mode, suppression, and frame gate.
         if (gated) {
@@ -141,7 +181,7 @@
                 !suppressed &&
                 !g.__ssAdEngaged &&
                 typeof g.ssIsEngageableFrame === 'function' && g.ssIsEngageableFrame()) {
-                if (typeof g.ssEngage === 'function') { g.ssEngage(site, SETTINGS); }
+                if (typeof g.ssEngage === 'function') { ssLog('engaging → mode:', SETTINGS.adMode); g.ssEngage(site, SETTINGS); }
             }
         }
 
@@ -153,6 +193,7 @@
                     var still = false;
                     try { still = computeAdActive(); } catch (e) { still = false; }
                     if (!still && g.__ssAdEngaged && typeof g.ssDisengage === 'function') {
+                        ssLog('ad ended → restoring playback');
                         g.ssDisengage();
                     }
                 }, 600);
@@ -216,6 +257,7 @@
 
     g.ssGetSettings().then(function (s) {
         SETTINGS = s;
+        ssLog('loaded on', site.key, '· confidence:', site.confidence, '· adMode:', s.adMode, '· autoSkip:', s.autoSkip, '· site enabled:', siteEnabled());
         if (typeof g.ssMaybeShowFirstRun === 'function') { g.ssMaybeShowFirstRun(); }
         start();
     });
