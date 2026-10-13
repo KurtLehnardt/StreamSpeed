@@ -29,6 +29,103 @@ function querySelectorAllShadows(selector, el = document.body) {
     return result.concat(childResults).flat();
 }
 
+// How deep to follow nested same-origin iframes (LMS players such as
+// SCORM / Articulate Storyline nest the player 2-3 frames down).
+var SS_MAX_FRAME_DEPTH = 5
+var SS_MIN_VIDEO_SIZE = 50
+
+// The top document plus every same-origin (i)frame document reachable from it,
+// including frames that live inside open shadow roots. Cross-origin frames
+// cannot be read without extra permissions, so they are counted and skipped.
+function collectDocuments() {
+    const docs = []
+    let crossOrigin = 0
+    const walk = (doc, depth) => {
+        docs.push(doc)
+        if (depth >= SS_MAX_FRAME_DEPTH) return
+        querySelectorAllShadows('iframe, frame', doc).forEach(frame => {
+            let child = null
+            try {
+                child = frame.contentDocument
+            } catch (e) {
+                child = null
+            }
+            if (child && child.documentElement) {
+                if (!docs.includes(child)) walk(child, depth + 1)
+            } else if (frame.src && !frame.src.startsWith('about:') && !frame.src.startsWith('javascript:')) {
+                crossOrigin++
+            }
+        })
+    }
+    walk(document, 0)
+    collectDocuments.crossOriginFrames = crossOrigin
+    return docs
+}
+
+// Every <video> in the page: light DOM, open shadow roots and same-origin frames.
+function collectVideos() {
+    return collectDocuments().flatMap(doc => querySelectorAllShadows('video', doc))
+}
+
+function isTinyVideo(v) {
+    const rect = v.getBoundingClientRect()
+    return rect.width < SS_MIN_VIDEO_SIZE || rect.height < SS_MIN_VIDEO_SIZE
+}
+
+function isVisibleVideo(v) {
+    const rect = v.getBoundingClientRect()
+    if (!rect.width || !rect.height) return false
+    const win = v.ownerDocument.defaultView || window
+    const style = win.getComputedStyle(v)
+    if (style.display === 'none' || style.visibility === 'hidden') return false
+    return rect.bottom > 0 && rect.right > 0 && rect.top < win.innerHeight && rect.left < win.innerWidth
+}
+
+// Pick the video the user most likely means: playing > visible > largest > has
+// a source. Tiny (< 50x50) videos are ignored unless nothing else exists.
+function rankVideos(videos) {
+    const key = v => {
+        const rect = v.getBoundingClientRect()
+        return [
+            !v.paused && !v.ended && v.readyState >= 2 ? 1 : 0,
+            isVisibleVideo(v) ? 1 : 0,
+            rect.width * rect.height,
+            v.currentSrc || v.src || v.srcObject ? 1 : 0
+        ]
+    }
+    const scored = videos.map(v => ({ v, k: key(v) }))
+    scored.sort((a, b) => {
+        for (let i = 0; i < a.k.length; i++) {
+            if (a.k[i] !== b.k[i]) return b.k[i] - a.k[i]
+        }
+        return 0
+    })
+    return scored.map(s => s.v)
+}
+
+function findTargetVideo(source) {
+    if (source === 'amazon') {
+        // Amazon keeps preview players ahead of the main one in the DOM.
+        const vids = document.getElementsByTagName('video')
+        if (vids.length) return vids[vids.length - 1]
+    }
+    const videos = collectVideos()
+    const candidates = videos.filter(v => !isTinyVideo(v))
+    return rankVideos(candidates.length ? candidates : videos)[0] || null
+}
+
+// More than two real (non-tiny) videos means a feed / video wall: apply to all.
+function isVideoWall() {
+    return collectVideos().filter(v => !isTinyVideo(v)).length > 2
+}
+
+function isEditableTarget(event) {
+    const t = event.target
+    if (!t || t.nodeType !== 1) return false
+    if (t.isContentEditable) return true
+    return (t.tagName === 'INPUT' && t.type !== 'range') || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT'
+}
+
 function main() {
     if (window.__ssSliderActive) {
         var __c = document.getElementById('sliderContainer');
@@ -110,20 +207,76 @@ function main() {
     });
 
     let slider = document.getElementById('speedSlider')
+    // The target video is re-resolved on every use (see getVideo) because SPA /
+    // LMS players replace <video> elements and load them into iframes later.
     let video
-    let iframe = document.getElementsByTagName('iframe').length ? document.getElementsByTagName('iframe') : null
-    if (source === 'amazon') {
-        vid_elem = document.getElementsByTagName('video')
-        video = vid_elem[vid_elem.length - 1]
-    } else {
+    // Same-origin frame documents we attached listeners to, so they can be removed.
+    let frameDocs = []
+    let keysInFrames = false
+    let warnedCrossOrigin = false
+
+    function getVideo() {
         try {
-            let v = querySelectorAllShadows('video')
-            let y = [...document.getElementsByTagName('video')]
-            video = v.length > y.length ? v[0] : y[0]
-            if ( !video.src ) console.log(`no video.src found for ${video}, source: ${source}`)
+            video = findTargetVideo(source)
         } catch (error) {
             console.log('Could not find a video element:', error)
+            video = null
         }
+        syncFrameListeners()
+        if (!video) noVideoFound()
+        return video
+    }
+
+    function noVideoFound() {
+        if (collectDocuments.crossOriginFrames && !warnedCrossOrigin) {
+            warnedCrossOrigin = true
+            Toast.fire({
+                icon: 'info',
+                title: 'This video is inside a cross-origin frame StreamSpeed cannot reach'
+            })
+        }
+    }
+
+    // Attach key/wheel/mousemove listeners to same-origin frame documents so
+    // shortcuts work while focus is inside an LMS player iframe. Called on every
+    // use and on frame loads, so lazily added frames are picked up.
+    function syncFrameListeners() {
+        if (!keysInFrames) return
+        frameDocs = frameDocs.filter(doc => doc.defaultView)
+        collectDocuments().forEach(doc => {
+            if (doc === document || frameDocs.includes(doc)) return
+            frameDocs.push(doc)
+            doc.addEventListener('keydown', changeSpeedWithKeys)
+            doc.addEventListener('load', onFrameLoad, true)
+            if (source !== 'youtube') doc.addEventListener('mousemove', showAndHideSlider)
+            if (scrollVolume) doc.addEventListener('wheel', checkScrollDirection, { passive: false })
+        })
+    }
+
+    // Capturing 'load' also sees every image/script load; only frames matter here.
+    function onFrameLoad(event) {
+        const t = event.target
+        if (t && (t.tagName === 'IFRAME' || t.tagName === 'FRAME')) syncFrameListeners()
+    }
+
+    function removeFrameListeners() {
+        frameDocs.forEach(doc => {
+            doc.removeEventListener('keydown', changeSpeedWithKeys)
+            doc.removeEventListener('load', onFrameLoad, true)
+            doc.removeEventListener('mousemove', showAndHideSlider)
+            doc.removeEventListener('wheel', checkScrollDirection, { passive: false })
+        })
+        frameDocs = []
+    }
+
+    try {
+        video = findTargetVideo(source)
+        if (video && !video.src) console.log(`no video.src found for ${video}, source: ${source}`)
+        if (collectDocuments.crossOriginFrames) {
+            console.info(`StreamSpeed: skipped ${collectDocuments.crossOriginFrames} cross-origin frame(s); videos inside them cannot be controlled.`)
+        }
+    } catch (error) {
+        console.log('Could not find a video element:', error)
     }
 
     function createSlider() {
@@ -226,19 +379,16 @@ function main() {
         if (observer) observer.disconnect()
         source = ''
         if (document.getElementById('sliderContainer')) document.getElementById('sliderContainer').remove()
+        // Previously this used an HTMLCollection as if it were one iframe (and
+        // threw when the page had none); frame listeners are tracked instead.
+        keysInFrames = false
+        removeFrameListeners()
+        document.removeEventListener('load', onFrameLoad, true)
+        window.removeEventListener('wheel', checkScrollDirection, { passive: false })
+        video = findTargetVideo(source)
         if (video) {
             resetSpeed()
             video.volume = 1
-            if (iframe.contentDocument) {
-                iframe.contentDocument.removeEventListener('wheel', checkScrollDirection, { passive: false })
-                iframe.contentDocument.removeEventListener('click', toggleScrollVolume, { passive: false })
-                iframe.contentDocument.removeEventListener('click', resetSpeed, { passive: false })
-                iframe.contentDocument.removeEventListener('mouseup', updateSpeed, { passive: false })
-                iframe.contentDocument.removeEventListener('mousemove', showAndHideSlider, { passive: false })
-                iframe.contentDocument.removeEventListener('keydown', changeSpeedWithKeys, { passive: false })
-                iframe.contentDocument.removeEventListener('click', deleteEverything, { passive: false })
-            }
-            window.removeEventListener('wheel', checkScrollDirection, { passive: false })
             window.removeEventListener('click', toggleScrollVolume, { passive: false })
             window.removeEventListener('click', resetSpeed, { passive: false })
             window.removeEventListener('mouseup', updateSpeed, { passive: false })
@@ -255,14 +405,14 @@ function main() {
         // but there may be a reason I chose 2 for some sites where it breaks if its less than 1. 
         // should look into the most popular sites and see if everything works with a video arr len of just > 1
         // so it iterates over every vidya on the page and doesn't break. This is the reason why disney plus was broken.
-        if (source === 'instagram' || source === 'unknown' || source === 'disney' || document.getElementsByTagName('video').length > 2) {
-            let videos = querySelectorAllShadows('video')
+        if (source === 'instagram' || source === 'unknown' || source === 'disney' || isVideoWall()) {
+            let videos = collectVideos()
             videos.map(vid => {
-                video = vid
-                video.playbackRate = slider.value
+                vid.playbackRate = slider.value
             })
-            updateSliderLabel(videos[0].playbackRate)
+            updateSliderLabel(getVideo() ? video.playbackRate : slider.value)
         } else {
+            if (!getVideo()) return
             video.playbackRate = slider.value
             updateSliderLabel(video.playbackRate)
         }
@@ -271,13 +421,13 @@ function main() {
     function resetSpeed() {
         slider.value = 1.0
         if (source === 'instagram' || source === 'unknown') {
-            let videos = querySelectorAllShadows('video')
+            let videos = collectVideos()
             videos.map(vid => {
-                video = vid
-                video.playbackRate = 1
+                vid.playbackRate = 1
             })
-            updateSliderLabel(videos[0].playbackRate)
+            updateSliderLabel(1)
         } else {
+            if (!getVideo()) return
             video.playbackRate = 1
             updateSliderLabel(video.playbackRate)
         }
@@ -323,9 +473,12 @@ function main() {
     }
 
     function changeSpeedWithKeys(event) {
-        if (source === 'instagram' || document.getElementsByTagName('video').length > 2) {
+        // Don't hijack -, =, [, ], \ or Backspace while the user is typing.
+        if (isEditableTarget(event)) return
+        if (source === 'instagram' || isVideoWall()) {
             changeSpeedWithKeysVideoWall(event)
         } else {
+            if (!getVideo()) return
             if (event.keyCode === 187 || event.keyCode === 221) {
                 if (video.playbackRate < 1.5) {
                     video.playbackRate = (video.playbackRate += 0.05).toFixed(2)
@@ -351,7 +504,7 @@ function main() {
 
 
     function changeSpeedWithKeysVideoWall(event) {
-        let videos = querySelectorAllShadows('video')
+        let videos = collectVideos()
         videos.map(vid => {
             video = vid
             if (event.keyCode === 187 || event.keyCode === 221) {
@@ -383,24 +536,20 @@ function main() {
     resetButton.addEventListener('click', resetSpeed)
 
     if ((source === 'unknown' || source === 'shorts')) {
-        if (querySelectorAllShadows('video').length) {
-            if (iframe && iframe.contentDocument) {
-                if (!changeSpeedWithKeysListener) {
-                    iframe.contentDocument.addEventListener('keydown', changeSpeedWithKeys)
-                    changeSpeedWithKeysListener = true
-                }
-                iframe.contentDocument.addEventListener('mousemove', showAndHideSlider)
-            } else {
-                if (!changeSpeedWithKeysListener) {
-                    document.addEventListener('keydown', changeSpeedWithKeys)
-                    changeSpeedWithKeysListener = true
-                }
-                document.addEventListener('keydown', showAndHideSlider)
+        if (collectVideos().length) {
+            if (!changeSpeedWithKeysListener) {
+                document.addEventListener('keydown', changeSpeedWithKeys)
+                changeSpeedWithKeysListener = true
             }
+            document.addEventListener('keydown', showAndHideSlider)
+            keysInFrames = true
         }
-    } else if (document && !changeSpeedWithKeysListener) {
-        changeSpeedWithKeysListener = true
-        document.addEventListener('keydown', changeSpeedWithKeys)
+    } else {
+        if (document && !changeSpeedWithKeysListener) {
+            changeSpeedWithKeysListener = true
+            document.addEventListener('keydown', changeSpeedWithKeys)
+        }
+        keysInFrames = true
     }
     if (source !== 'youtube') {
         document.addEventListener('mousemove', showAndHideSlider)
@@ -429,9 +578,11 @@ function main() {
     }
 
     function checkScrollDirection(event) {
-        if (source === 'instagram' || document.getElementsByTagName('video').length > 2) {
+        if (source === 'instagram' || isVideoWall()) {
             checkScrollDirectionVideoWall(event)
         } else {
+            // Wheel events are frequent: reuse the resolved video while it is still in the page.
+            if ((!video || !video.isConnected) && !getVideo()) return
             event.preventDefault()
             if (checkScrollDirectionIsUp(event)) {
                 if ((Math.ceil(video.volume * 100) / 100) < .98) {
@@ -448,7 +599,7 @@ function main() {
 
     function checkScrollDirectionVideoWall(event) {
         event.preventDefault()
-        let videos = querySelectorAllShadows('video')
+        let videos = collectVideos()
         videos.map(vid => {
             video = vid
             if (checkScrollDirectionIsUp(event)) {
@@ -503,13 +654,21 @@ function main() {
 
         if (!scrollVolume) {
             window.addEventListener('wheel', checkScrollDirection, { passive: false })
+            frameDocs.forEach(doc => doc.addEventListener('wheel', checkScrollDirection, { passive: false }))
             scrollVolume = true
         } else {
             window.removeEventListener('wheel', checkScrollDirection, { passive: false })
+            frameDocs.forEach(doc => doc.removeEventListener('wheel', checkScrollDirection, { passive: false }))
             scrollVolume = false
         }
     }
     let scrollVolumeButton = document.getElementById('toggleScrollVolumeButton')
     scrollVolumeButton.addEventListener('click', toggleScrollVolume)
+
+    // Reach same-origin frames now, and again whenever a frame (re)loads.
+    if (keysInFrames) {
+        document.addEventListener('load', onFrameLoad, true)
+        syncFrameListeners()
+    }
 
 }
