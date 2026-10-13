@@ -139,7 +139,10 @@ function main() {
             __c.style.opacity = '100%';
             return;
         }
-        // The page removed our slider; fall through and rebuild it.
+        // The page removed our slider; drop the previous run's listeners
+        // (otherwise keys step twice) and fall through to rebuild it.
+        if (window.__ssTeardown) window.__ssTeardown()
+        window.__ssTeardown = null
         window.__ssSliderActive = false;
     }
     window.__ssSliderActive = true;
@@ -399,13 +402,10 @@ function main() {
 
     slider = document.getElementById('speedSlider')
 
-    function deleteEverything() {
-        window.__ssSliderActive = false;
+    // Remove every listener this run attached outside the slider itself. Also
+    // exposed as window.__ssTeardown so a rebuild can clean up a previous run.
+    function teardown() {
         if (observer) observer.disconnect()
-        // Resolve before clearing source so site rules (e.g. amazon) still apply.
-        video = findTargetVideo(source)
-        source = ''
-        if (document.getElementById('sliderContainer')) document.getElementById('sliderContainer').remove()
         // Previously this used an HTMLCollection as if it were one iframe (and
         // threw when the page had none); frame listeners are tracked instead.
         keysInFrames = false
@@ -417,8 +417,25 @@ function main() {
         document.removeEventListener('mousemove', showAndHideSlider)
         changeSpeedWithKeysListener = false
         window.removeEventListener('wheel', checkScrollDirection, { passive: false })
+    }
+
+    function deleteEverything() {
+        window.__ssSliderActive = false;
+        teardown()
+        window.__ssTeardown = null
+        // Resolve before clearing source so site rules (e.g. amazon) still apply,
+        // and reset that element directly rather than re-resolving in resetSpeed().
+        try {
+            video = findTargetVideo(source)
+        } catch (error) {
+            console.log('Could not find a video element:', error)
+            video = null
+        }
+        source = ''
+        if (document.getElementById('sliderContainer')) document.getElementById('sliderContainer').remove()
         if (video) {
-            resetSpeed()
+            slider.value = 1.0
+            video.playbackRate = 1
             video.volume = 1
             window.removeEventListener('click', toggleScrollVolume, { passive: false })
             window.removeEventListener('click', resetSpeed, { passive: false })
@@ -697,6 +714,8 @@ function main() {
     }
     let scrollVolumeButton = document.getElementById('toggleScrollVolumeButton')
     scrollVolumeButton.addEventListener('click', toggleScrollVolume)
+
+    window.__ssTeardown = teardown
 
     // Reach same-origin frames now, and again whenever a frame (re)loads.
     if (keysInFrames) {
