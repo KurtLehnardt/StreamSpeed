@@ -33,6 +33,8 @@ function querySelectorAllShadows(selector, el = document.body) {
 // SCORM / Articulate Storyline nest the player 2-3 frames down).
 var SS_MAX_FRAME_DEPTH = 5
 var SS_MIN_VIDEO_SIZE = 50
+// keyCodes handled by changeSpeedWithKeys: Backspace, =, -, [, \, ]
+var SPEED_KEYS = [8, 187, 189, 219, 220, 221]
 
 // The top document plus every same-origin (i)frame document reachable from it,
 // including frames that live inside open shadow roots. Cross-origin frames
@@ -107,7 +109,10 @@ function findTargetVideo(source) {
     if (source === 'amazon') {
         // Amazon keeps preview players ahead of the main one in the DOM.
         const vids = document.getElementsByTagName('video')
-        if (vids.length) return vids[vids.length - 1]
+        if (vids.length) {
+            collectDocuments.crossOriginFrames = 0
+            return vids[vids.length - 1]
+        }
     }
     const videos = collectVideos()
     const candidates = videos.filter(v => !isTinyVideo(v))
@@ -120,7 +125,8 @@ function isVideoWall() {
 }
 
 function isEditableTarget(event) {
-    const t = event.target
+    // event.target is retargeted to the shadow host; composedPath()[0] is the real element.
+    const t = (event.composedPath && event.composedPath()[0]) || event.target
     if (!t || t.nodeType !== 1) return false
     if (t.isContentEditable) return true
     return (t.tagName === 'INPUT' && t.type !== 'range') || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT'
@@ -214,6 +220,16 @@ function main() {
     let frameDocs = []
     let keysInFrames = false
     let warnedCrossOrigin = false
+    let scrollVolume = false
+    let lastFrameSync = 0
+    let wallCache = { at: 0, value: false }
+
+    // Wheel ticks are frequent; avoid a full DOM/frame walk on every one.
+    function isVideoWallCached() {
+        const now = Date.now()
+        if (now - wallCache.at > 500) wallCache = { at: now, value: isVideoWall() }
+        return wallCache.value
+    }
 
     function getVideo() {
         try {
@@ -251,6 +267,15 @@ function main() {
             if (source !== 'youtube') doc.addEventListener('mousemove', showAndHideSlider)
             if (scrollVolume) doc.addEventListener('wheel', checkScrollDirection, { passive: false })
         })
+    }
+
+    // 'load' does not cross shadow boundaries, so frames inside shadow roots that
+    // reload are picked up from (throttled) mouse movement instead.
+    function syncFrameListenersThrottled() {
+        const now = Date.now()
+        if (now - lastFrameSync < 1000) return
+        lastFrameSync = now
+        syncFrameListeners()
     }
 
     // Capturing 'load' also sees every image/script load; only frames matter here.
@@ -377,6 +402,8 @@ function main() {
     function deleteEverything() {
         window.__ssSliderActive = false;
         if (observer) observer.disconnect()
+        // Resolve before clearing source so site rules (e.g. amazon) still apply.
+        video = findTargetVideo(source)
         source = ''
         if (document.getElementById('sliderContainer')) document.getElementById('sliderContainer').remove()
         // Previously this used an HTMLCollection as if it were one iframe (and
@@ -384,8 +411,12 @@ function main() {
         keysInFrames = false
         removeFrameListeners()
         document.removeEventListener('load', onFrameLoad, true)
+        // These were added to document, not window, so they used to survive close.
+        document.removeEventListener('keydown', changeSpeedWithKeys)
+        document.removeEventListener('keydown', showAndHideSlider)
+        document.removeEventListener('mousemove', showAndHideSlider)
+        changeSpeedWithKeysListener = false
         window.removeEventListener('wheel', checkScrollDirection, { passive: false })
-        video = findTargetVideo(source)
         if (video) {
             resetSpeed()
             video.volume = 1
@@ -461,6 +492,7 @@ function main() {
         // sliderContainer.style.cssText = sliderContainer.style.cssText.split('transition: .5s ease-out;')[0]
         // sliderContainer.style.cssText += 'transition: .5s ease-in;'
         if (sliderContainer) sliderContainer.style.opacity = '100%'
+        syncFrameListenersThrottled()
         if (!fadingOut && sliderContainer) {
             // sliderContainer.style.cssText = sliderContainer.style.cssText.split('transition: .5s ease-in;')[0]
             // sliderContainer.style.cssText = 'transition: .5s ease-out;'
@@ -473,7 +505,9 @@ function main() {
     }
 
     function changeSpeedWithKeys(event) {
-        // Don't hijack -, =, [, ], \ or Backspace while the user is typing.
+        // Only - = [ ] \ and Backspace are shortcuts; skip the video lookup for anything else.
+        if (!SPEED_KEYS.includes(event.keyCode)) return
+        // Don't hijack them while the user is typing.
         if (isEditableTarget(event)) return
         if (source === 'instagram' || isVideoWall()) {
             changeSpeedWithKeysVideoWall(event)
@@ -578,7 +612,7 @@ function main() {
     }
 
     function checkScrollDirection(event) {
-        if (source === 'instagram' || isVideoWall()) {
+        if (source === 'instagram' || isVideoWallCached()) {
             checkScrollDirectionVideoWall(event)
         } else {
             // Wheel events are frequent: reuse the resolved video while it is still in the page.
@@ -622,7 +656,6 @@ function main() {
         return event.deltaY < 0;
     }
 
-    let scrollVolume = false
     function toggleScrollVolume() {
         if (!scrollVolumeToggle) {
             scrollVolumeToggle = true
