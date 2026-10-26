@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "StreamSpeed",
   "description": "Adjust playback speed and volume",
-  "version": "4.3.0",
+  "version": "4.15.0",
   "action": {
     "default_icon": {
       "16": "images/play16.png",
